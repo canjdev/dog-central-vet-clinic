@@ -10,10 +10,10 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { Login } from "./Login";
+import LoginPage from "./LoginPage";
 import { PetMedicalHistory } from "./PetMedicalHistory";
 import { AdminDashboard } from "./AdminDashboard";
-import { services, vets, patients } from "@/utils/sharedUtils";
+import { patients } from "@/utils/sharedUtils";
 
 type UserRole = "customer" | "staff" | "admin";
 
@@ -21,6 +21,42 @@ interface User {
   username: string;
   role: UserRole;
 }
+
+const services = [
+  {
+    name: "Vaccination",
+    description:
+      "Keep your pet protected with our comprehensive vaccination services.",
+  },
+  {
+    name: "Grooming",
+    description:
+      "Professional grooming to keep your furry friend looking and feeling their best.",
+  },
+  {
+    name: "24 hr care",
+    description:
+      "Round-the-clock care for your pet's health emergencies and peace of mind.",
+  },
+];
+
+const vets = [
+  {
+    name: "Dr. Sarah Johnson",
+    image: "/placeholder.svg?height=200&width=200",
+    role: "Lead Veterinarian",
+    schedule: [
+      { day: "Mon-Fri", hours: "9:00 AM - 5:00 PM" },
+      { day: "Sat", hours: "10:00 AM - 2:00 PM" },
+    ],
+  },
+];
+
+const helpers = [
+  { name: "John Smith", role: "Veterinary Technician" },
+  { name: "Emily Brown", role: "Groomer" },
+  { name: "Michael Lee", role: "Veterinary Assistant" },
+];
 
 export default function VetClinicLanding() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -60,9 +96,11 @@ export default function VetClinicLanding() {
         <div className="container flex h-14 items-center">
           <div className="mr-4 hidden md:flex">
             <a className="mr-6 flex items-center space-x-2" href="/">
-              <span className="hidden font-bold sm:inline-block text-primary">
-                🐾 Dog Central Veterinary Clinic & Grooming
-              </span>
+              <img
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image%2020-H2WL8rPLJfpqcOkz3zhME4AbN8Gmaj.png"
+                alt="Dog Central Clinic Logo"
+                className="h-8 w-auto"
+              />
             </a>
             <nav className="flex items-center space-x-6 text-sm font-medium">
               <a
@@ -84,7 +122,7 @@ export default function VetClinicLanding() {
                 className="transition-colors hover:text-primary text-primary/60"
                 href="#vets"
               >
-                Our Vets
+                Our Team
               </a>
               <a
                 className="transition-colors hover:text-primary text-primary/60"
@@ -155,7 +193,7 @@ export default function VetClinicLanding() {
                   className="transition-colors hover:text-primary text-primary/60"
                   href="#vets"
                 >
-                  Our Vets
+                  Our Team
                 </a>
                 <a
                   className="transition-colors hover:text-primary text-primary/60"
@@ -229,7 +267,7 @@ export default function VetClinicLanding() {
                 <div className="flex flex-col items-center space-y-4 text-center">
                   <div className="space-y-2">
                     <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none text-secondary-foreground">
-                      Welcome to Dog Central Veterinary Clinic & Grooming
+                      Welcome to Dog Central Clinic
                     </h1>
                     <p className="mx-auto max-w-[700px] text-secondary-foreground/80 md:text-xl">
                       Providing compassionate care for your furry friends. Your
@@ -259,7 +297,7 @@ export default function VetClinicLanding() {
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-8 text-primary">
                   Our Services
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {services.map((service, index) => (
                     <Card key={index} className="bg-secondary">
                       <CardContent className="p-6">
@@ -282,45 +320,78 @@ export default function VetClinicLanding() {
             >
               <div className="container px-4 md:px-6">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-8 text-primary">
-                  Our Veterinarians
+                  Our Team
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                  {vets.map((vet, index) => (
-                    <Card key={index} className="flex flex-col bg-secondary">
-                      <CardContent className="p-6 flex-grow">
-                        <div className="flex flex-col items-center mb-4">
-                          <Avatar className="w-32 h-32 mb-4">
-                            <AvatarImage src={vet.image} alt={vet.name} />
-                            <AvatarFallback>
-                              {vet.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <h3 className="text-xl font-bold text-center text-secondary-foreground">
-                            {vet.name}
-                          </h3>
-                        </div>
-                        <div className="mt-4">
-                          <h4 className="font-semibold mb-2 text-secondary-foreground">
-                            Sample Schedule:
-                          </h4>
-                          <ul className="space-y-1">
-                            {vet.schedule.map((slot, slotIndex) => (
-                              <li
-                                key={slotIndex}
-                                className="text-sm text-secondary-foreground/80"
-                              >
-                                <span className="font-medium">{slot.day}:</span>{" "}
-                                {slot.hours}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <Card className="flex flex-col bg-secondary">
+                    <CardContent className="p-6 flex-grow">
+                      <div className="flex flex-col items-center mb-4">
+                        <Avatar className="w-32 h-32 mb-4">
+                          <AvatarImage src={vets[0].image} alt={vets[0].name} />
+                          <AvatarFallback>
+                            {vets[0].name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <h3 className="text-xl font-bold text-center text-secondary-foreground">
+                          {vets[0].name}
+                        </h3>
+                        <p className="text-secondary-foreground/80">
+                          {vets[0].role}
+                        </p>
+                      </div>
+                      <div className="mt-4">
+                        <h4 className="font-semibold mb-2 text-secondary-foreground">
+                          Schedule:
+                        </h4>
+                        <ul className="space-y-1">
+                          {vets[0].schedule.map((slot, slotIndex) => (
+                            <li
+                              key={slotIndex}
+                              className="text-sm text-secondary-foreground/80"
+                            >
+                              <span className="font-medium">{slot.day}:</span>{" "}
+                              {slot.hours}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="flex flex-col bg-secondary">
+                    <CardContent className="p-6 flex-grow">
+                      <h3 className="text-xl font-bold mb-4 text-secondary-foreground">
+                        Our Helpers
+                      </h3>
+                      <ul className="space-y-2">
+                        {helpers.map((helper, index) => (
+                          <li
+                            key={index}
+                            className="flex items-center space-x-2"
+                          >
+                            <Avatar className="w-10 h-10">
+                              <AvatarFallback>
+                                {helper.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium text-secondary-foreground">
+                                {helper.name}
+                              </p>
+                              <p className="text-sm text-secondary-foreground/80">
+                                {helper.role}
+                              </p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </section>
@@ -375,7 +446,7 @@ export default function VetClinicLanding() {
 
         {activeTab === "login" && !loggedInUser && (
           <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
-            <Login onLogin={handleLogin} />
+            <LoginPage onLogin={handleLogin} />
           </section>
         )}
 
@@ -398,22 +469,33 @@ export default function VetClinicLanding() {
         <div className="container px-4 md:px-6 flex flex-col md:flex-row justify-between items-center">
           <div className="text-center md:text-left mb-4 md:mb-0">
             <h3 className="font-bold text-secondary-foreground">
-              Dog Central Veterinary Clinic & Grooming
+              Dog Central Clinic
             </h3>
             <p className="text-sm text-secondary-foreground/80">
-              Uni E CDC One Bldg Chipeco Ave Extn. Halang Calamba City
+              123 Pet Street, Animalville, AV 12345
             </p>
             <p className="text-sm text-secondary-foreground/80">
-              Phone: 09328495981
+              Phone: (555) 123-4567
             </p>
           </div>
           <div className="flex space-x-4">
             <a
-              href="https://www.facebook.com/profile.php?id=100064038342036"
-              target="_blank"
+              href="#"
               className="text-secondary-foreground/80 hover:text-secondary-foreground"
             >
               Facebook
+            </a>
+            <a
+              href="#"
+              className="text-secondary-foreground/80 hover:text-secondary-foreground"
+            >
+              Twitter
+            </a>
+            <a
+              href="#"
+              className="text-secondary-foreground/80 hover:text-secondary-foreground"
+            >
+              Instagram
             </a>
           </div>
         </div>
