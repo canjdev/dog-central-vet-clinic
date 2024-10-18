@@ -45,9 +45,12 @@ export const vets = [
 ];
 
 export const patients = [
-  { name: "Max", breed: "Golden Retriever", image: "/assets/max.jpg" },
-  { name: "Luna", breed: "Siamese Cat", image: "/assets/luna.jpg" },
-  { name: "Buddy", breed: "Labrador", image: "/assets/buddy.jpg" },
-  { name: "Bella", breed: "Persian Cat", image: "/assets/bella.jpg" },
-  { name: "Charlie", breed: "Beagle", image: "/assets/charlie.jpg" },
+  {
+    name: "Shoyo",
+    breed: "Patay Gutom",
+    image: "./src/assets/gallery_1.png",
+  },
+  { name: "Yuna", breed: "Dugyot", image: "./src/assets/gallery_2.png" },
+  { name: "Twig", breed: "Mabaho", image: "./src/assets/gallery_3.png" },
+  { name: "Twilly", breed: "Iyakin", image: "./src/assets/gallery_4.png" },
 ];

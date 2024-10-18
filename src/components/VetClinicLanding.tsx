@@ -61,7 +61,7 @@ export default function VetClinicLanding() {
           <div className="mr-4 hidden md:flex">
             <a className="mr-6 flex items-center space-x-2" href="/">
               <span className="hidden font-bold sm:inline-block text-primary">
-                🐾 YCC Veterinary Clinic
+                🐾 Dog Central Veterinary Clinic & Grooming
               </span>
             </a>
             <nav className="flex items-center space-x-6 text-sm font-medium">
@@ -229,7 +229,7 @@ export default function VetClinicLanding() {
                 <div className="flex flex-col items-center space-y-4 text-center">
                   <div className="space-y-2">
                     <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none text-secondary-foreground">
-                      Welcome to YCC Veterinary Clinic
+                      Welcome to Dog Central Veterinary Clinic & Grooming
                     </h1>
                     <p className="mx-auto max-w-[700px] text-secondary-foreground/80 md:text-xl">
                       Providing compassionate care for your furry friends. Your
@@ -398,33 +398,22 @@ export default function VetClinicLanding() {
         <div className="container px-4 md:px-6 flex flex-col md:flex-row justify-between items-center">
           <div className="text-center md:text-left mb-4 md:mb-0">
             <h3 className="font-bold text-secondary-foreground">
-              YCC Veterinary Clinic
+              Dog Central Veterinary Clinic & Grooming
             </h3>
             <p className="text-sm text-secondary-foreground/80">
-              123 Pet Street, Animalville, AV 12345
+              Uni E CDC One Bldg Chipeco Ave Extn. Halang Calamba City
             </p>
             <p className="text-sm text-secondary-foreground/80">
-              Phone: (555) 123-4567
+              Phone: 09328495981
             </p>
           </div>
           <div className="flex space-x-4">
             <a
-              href="#"
+              href="https://www.facebook.com/profile.php?id=100064038342036"
+              target="_blank"
               className="text-secondary-foreground/80 hover:text-secondary-foreground"
             >
               Facebook
-            </a>
-            <a
-              href="#"
-              className="text-secondary-foreground/80 hover:text-secondary-foreground"
-            >
-              Twitter
-            </a>
-            <a
-              href="#"
-              className="text-secondary-foreground/80 hover:text-secondary-foreground"
-            >
-              Instagram
             </a>
           </div>
         </div>
