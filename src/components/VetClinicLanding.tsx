@@ -82,7 +82,7 @@ export default function VetClinicLanding() {
 
   const handleLogin = (username: string, role: UserRole) => {
     setLoggedInUser({ username, role });
-    setActiveTab("medical-history");
+    // setActiveTab("medical-history");
   };
 
   const handleLogout = () => {

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FaGoogle } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 export type UserRole = "customer" | "staff" | "admin";
 
@@ -78,13 +79,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             </Button>
           </form>
           <div className="mt-4">
-            <Button
-              onClick={handleGoogleLogin}
+            <a
+              href="https://management-system-backend-theta.vercel.app/api/auth/google"
+              // onClick={handleGoogleLogin}
               className="w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
             >
               <FaGoogle className="mr-2" />
               Login with Google
-            </Button>
+            </a>
           </div>
         </CardContent>
       </Card>
