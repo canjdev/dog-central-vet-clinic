@@ -83,7 +83,7 @@ const recentPatients: Patient[] = [
   },
 ];
 
-export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
+export function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 

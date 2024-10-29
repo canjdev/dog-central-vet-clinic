@@ -1,4 +1,3 @@
-import React from "react";
 import VetClinicLanding from "./components/VetClinicLanding";
 import { Route, Routes } from "react-router-dom";
 import { AdminDashboard } from "./components/AdminDashboard";
