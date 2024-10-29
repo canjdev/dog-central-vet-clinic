@@ -445,7 +445,7 @@ export default function VetClinicLanding() {
         )}
 
         {activeTab === "login" && !loggedInUser && (
-          <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
+          <section className="w-full bg-background">
             <LoginPage onLogin={handleLogin} />
           </section>
         )}
@@ -460,7 +460,7 @@ export default function VetClinicLanding() {
           loggedInUser &&
           (loggedInUser.role === "admin" || loggedInUser.role === "staff") && (
             <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
-              <AdminDashboard userRole={loggedInUser.role} />
+              <AdminDashboard />
             </section>
           )}
       </main>
