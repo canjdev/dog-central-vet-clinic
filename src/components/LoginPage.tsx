@@ -40,7 +40,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">
-            Login to Dog Central Veterinary Clinic & Grooming
+            Login to Dog Central Veterinary Clinic & Grooming!
           </CardTitle>
         </CardHeader>
         <CardContent>
