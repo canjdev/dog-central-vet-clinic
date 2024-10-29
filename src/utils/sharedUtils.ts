@@ -44,17 +44,29 @@ export const vets = [
   },
 ];
 
-import gallery1 from "../assets/gallery_1.png";
-import gallery2 from "../assets/gallery_2.png";
-import gallery3 from "../assets/gallery_3.png";
-import gallery4 from "../assets/gallery_4.png";
 export const patients = [
   {
     name: "Shoyo",
     breed: "Patay Gutom",
-    image: gallery1,
+    image:
+      "https://i.natgeofe.com/n/548467d8-c5f1-4551-9f58-6817a8d2c45e/NationalGeographic_2572187_3x4.jpg",
   },
-  { name: "Yuna", breed: "Dugyot", image: gallery2 },
-  { name: "Twig", breed: "Mabaho", image: gallery3 },
-  { name: "Twilly", breed: "Iyakin", image: gallery4 },
+  {
+    name: "Yuna",
+    breed: "Dugyot",
+    image:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/800px-Cat_November_2010-1a.jpg",
+  },
+  {
+    name: "Twig",
+    breed: "Mabaho",
+    image:
+      "https://www.boredpanda.com/blog/wp-content/uploads/2023/04/644a230e3f5d4_l7ink8py2vta1__700.jpg",
+  },
+  {
+    name: "Twilly",
+    breed: "Iyakin",
+    image:
+      "https://i.pinimg.com/736x/e5/b9/81/e5b98110fcd62d6ebe0e636262170175.jpg",
+  },
 ];
