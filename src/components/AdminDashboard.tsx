@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   LayoutDashboard,
   Calendar,
@@ -13,7 +18,7 @@ import {
   MessageSquare,
   BookOpen,
   Image as ImageIcon,
-  ArrowLeft,
+  LogOut,
   Search,
   Menu,
 } from "lucide-react";
@@ -78,7 +83,7 @@ const recentPatients: Patient[] = [
   },
 ];
 
-export function AdminDashboard() {
+export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -130,11 +135,13 @@ export function AdminDashboard() {
           ))}
         </nav>
         <div className="p-3">
-          <Link to="/">
-            <Button variant="outline" className="w-full text-sm py-1">
-              <ArrowLeft className="mr-2 h-3 w-3" /> Return to Main Website
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            className="w-full text-sm py-1"
+            onClick={onLogout}
+          >
+            <LogOut className="mr-2 h-3 w-3" /> Logout
+          </Button>
         </div>
       </div>
 
@@ -175,18 +182,38 @@ export function AdminDashboard() {
                   />
                 </svg>
               </button>
-              <div className="flex items-center">
-                <span className="mr-2 text-sm font-medium hidden sm:inline">
-                  Christian Juan
-                </span>
-                <Avatar>
-                  <AvatarImage
-                    src="/placeholder.svg?height=32&width=32"
-                    alt="Admin"
-                  />
-                  <AvatarFallback>CJ</AvatarFallback>
-                </Avatar>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 w-8 rounded-full"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src="/placeholder.svg?height=32&width=32"
+                        alt="Admin"
+                      />
+                      <AvatarFallback>CJ</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuItem className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        Christian Juan
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        admin@dogcentral.com
+                      </p>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
@@ -381,25 +408,265 @@ export function AdminDashboard() {
                 </CardContent>
               </Card>
             </TabsContent>
-            {[
-              "appointments",
-              "owners",
-              "pets",
-              "messages",
-              "bookings",
-              "gallery",
-            ].map((tab) => (
-              <TabsContent key={tab} value={tab}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="capitalize">{tab}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>Content for {tab} goes here.</p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            ))}
+            <TabsContent value="appointments">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Appointments</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {appointments.map((appointment) => (
+                      <div
+                        key={appointment.id}
+                        className="flex items-center justify-between p-4 bg-white rounded-lg shadow"
+                      >
+                        <div className="flex items-center space-x-4">
+                          <Avatar>
+                            <AvatarFallback>
+                              {appointment.patientName[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">
+                              {appointment.patientName}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {appointment.date}
+                            </p>
+                          </div>
+                        </div>
+                        <div
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            appointment.status === "confirmed"
+                              ? "bg-green-100 text-green-800"
+                              : appointment.status === "cancelled"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {appointment.status}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="owners">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pet Owners</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[
+                      {
+                        name: "John Doe",
+                        pets: ["Max (Dog)", "Whiskers (Cat)"],
+                        phone: "123-456-7890",
+                      },
+                      {
+                        name: "Jane Smith",
+                        pets: ["Buddy (Dog)"],
+                        phone: "098-765-4321",
+                      },
+                      {
+                        name: "Mike Johnson",
+                        pets: ["Fluffy (Cat)", "Tweety (Bird)"],
+                        phone: "555-123-4567",
+                      },
+                    ].map((owner, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 bg-white rounded-lg shadow"
+                      >
+                        <div>
+                          <p className="font-medium">{owner.name}</p>
+                          <p className="text-sm text-gray-500">
+                            {owner.pets.join(", ")}
+                          </p>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {owner.phone}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="pets">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Registered Pets</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[
+                      {
+                        name: "Max",
+                        type: "Dog",
+                        breed: "Golden Retriever",
+                        owner: "John Doe",
+                        age: 5,
+                      },
+                      {
+                        name: "Whiskers",
+                        type: "Cat",
+                        breed: "Siamese",
+                        owner: "John Doe",
+                        age: 3,
+                      },
+                      {
+                        name: "Buddy",
+                        type: "Dog",
+                        breed: "Labrador",
+                        owner: "Jane Smith",
+                        age: 2,
+                      },
+                      {
+                        name: "Fluffy",
+                        type: "Cat",
+                        breed: "Persian",
+                        owner: "Mike Johnson",
+                        age: 4,
+                      },
+                    ].map((pet, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 bg-white rounded-lg shadow"
+                      >
+                        <div>
+                          <p className="font-medium">{pet.name}</p>
+                          <p className="text-sm text-gray-500">
+                            {pet.type} - {pet.breed}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm">{pet.owner}</p>
+                          <p className="text-sm text-gray-500">
+                            {pet.age} years old
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="messages">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Messages</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[
+                      {
+                        sender: "John Doe",
+                        message: "When is my next appointment?",
+                        time: "10:30 AM",
+                      },
+                      {
+                        sender: "Jane Smith",
+                        message: "I need to reschedule Buddy's checkup.",
+                        time: "Yesterday",
+                      },
+                      {
+                        sender: "Mike Johnson",
+                        message: "Is Fluffy's medication ready for pickup?",
+                        time: "2 days ago",
+                      },
+                    ].map((message, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start space-x-4 p-4 bg-white rounded-lg shadow"
+                      >
+                        <Avatar>
+                          <AvatarFallback>{message.sender[0]}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <p className="font-medium">{message.sender}</p>
+                          <p className="text-sm text-gray-500">
+                            {message.message}
+                          </p>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {message.time}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="bookings">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Upcoming Bookings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[
+                      {
+                        service: "Grooming",
+                        pet: "Max (Dog)",
+                        owner: "John Doe",
+                        date: "May 15, 2:00 PM",
+                      },
+                      {
+                        service: "Vaccination",
+                        pet: "Whiskers (Cat)",
+                        owner: "John Doe",
+                        date: "May 17, 10:00 AM",
+                      },
+                      {
+                        service: "Checkup",
+                        pet: "Buddy (Dog)",
+                        owner: "Jane Smith",
+                        date: "May 20, 3:30 PM",
+                      },
+                    ].map((booking, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 bg-white rounded-lg shadow"
+                      >
+                        <div>
+                          <p className="font-medium">{booking.service}</p>
+                          <p className="text-sm text-gray-500">
+                            {booking.pet} - {booking.owner}
+                          </p>
+                        </div>
+                        <div className="text-sm">{booking.date}</div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="gallery">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pet Gallery</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[1, 2, 3, 4, 5, 6].map((item) => (
+                      <div
+                        key={item}
+                        className="aspect-square bg-gray-200 rounded-lg overflow-hidden"
+                      >
+                        <img
+                          src={`/placeholder.svg?height=300&width=300&text=Pet ${item}`}
+                          alt={`Pet ${item}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </main>
         {sidebarOpen && (
