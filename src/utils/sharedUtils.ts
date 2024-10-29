@@ -44,13 +44,17 @@ export const vets = [
   },
 ];
 
+import gallery1 from "../assets/gallery_1.png";
+import gallery2 from "../assets/gallery_2.png";
+import gallery3 from "../assets/gallery_3.png";
+import gallery4 from "../assets/gallery_4.png";
 export const patients = [
   {
     name: "Shoyo",
     breed: "Patay Gutom",
-    image: "./src/assets/gallery_1.png",
+    image: gallery1,
   },
-  { name: "Yuna", breed: "Dugyot", image: "./src/assets/gallery_2.png" },
-  { name: "Twig", breed: "Mabaho", image: "./src/assets/gallery_3.png" },
-  { name: "Twilly", breed: "Iyakin", image: "./src/assets/gallery_4.png" },
+  { name: "Yuna", breed: "Dugyot", image: gallery2 },
+  { name: "Twig", breed: "Mabaho", image: gallery3 },
+  { name: "Twilly", breed: "Iyakin", image: gallery4 },
 ];
