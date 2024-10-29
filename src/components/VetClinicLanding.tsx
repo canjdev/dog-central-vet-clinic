@@ -122,7 +122,7 @@ export default function VetClinicLanding() {
                 className="transition-colors hover:text-primary text-primary/60"
                 href="#vets"
               >
-                Our Team
+                Our Vets
               </a>
               <a
                 className="transition-colors hover:text-primary text-primary/60"
