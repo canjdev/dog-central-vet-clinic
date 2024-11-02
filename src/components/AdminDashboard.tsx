@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +34,7 @@ import {
   Trash,
   FileText,
   UserCog,
+  DollarSign,
 } from "lucide-react";
 import {
   Table,
@@ -104,6 +107,14 @@ interface User {
   name: string;
   email: string;
   role: "admin" | "veterinarian" | "staff";
+}
+
+interface PatientHistory {
+  id: number;
+  petName: string;
+  date: string;
+  diagnosis: string;
+  treatment: string;
 }
 
 export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
@@ -292,8 +303,32 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
     { id: 3, name: "Staff User", email: "staff@example.com", role: "staff" },
   ]);
 
+  const [patientHistory, setPatientHistory] = useState<PatientHistory[]>([
+    {
+      id: 1,
+      petName: "Max",
+      date: "2023-05-01",
+      diagnosis: "Ear infection",
+      treatment: "Prescribed ear drops",
+    },
+    {
+      id: 2,
+      petName: "Whiskers",
+      date: "2023-05-10",
+      diagnosis: "Annual checkup",
+      treatment: "Vaccinations updated",
+    },
+    {
+      id: 3,
+      petName: "Buddy",
+      date: "2023-05-15",
+      diagnosis: "Sprained paw",
+      treatment: "Rest and anti-inflammatory medication",
+    },
+  ]);
+
   const handleNavClick = (tab: string) => {
-    setActiveTab(tab);
+    setActiveTab(tab.toLowerCase());
     setSidebarOpen(false);
   };
 
@@ -337,25 +372,25 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
     <div className="flex flex-col h-screen bg-gray-100 lg:flex-row">
       {/* Sidebar */}
       <div
-        className={`w-56 bg-white shadow-md flex-shrink-0 fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out transform ${
+        className={`w-64 bg-white shadow-md flex-shrink-0 fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:relative lg:translate-x-0`}
       >
-        <div className="p-3 mb-1">
+        <div className="p-4">
           <img
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image%2020-H2WL8rPLJfpqcOkz3zhME4AbN8Gmaj.png"
             alt="Dog Central Clinic Logo"
-            className="h-8 w-auto"
+            className="h-8 w-auto mb-6"
           />
         </div>
-        <nav className="flex-1">
+        <nav className="space-y-2 px-2">
           {accessibleTabs.map((item) => (
             <Button
               key={item.label}
-              variant="ghost"
-              className={`w-full justify-start px-3 py-1.5 text-left text-sm ${
-                activeTab === item.label.toLowerCase() ? "bg-gray-100" : ""
-              }`}
+              variant={
+                activeTab === item.label.toLowerCase() ? "secondary" : "ghost"
+              }
+              className="w-full justify-start"
               onClick={() => handleNavClick(item.label.toLowerCase())}
             >
               <item.icon className="mr-2 h-4 w-4" />
@@ -363,13 +398,9 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
             </Button>
           ))}
         </nav>
-        <div className="p-3">
-          <Button
-            variant="outline"
-            className="w-full text-sm py-1"
-            onClick={onLogout}
-          >
-            <LogOut className="mr-2 h-3 w-3" /> Logout
+        <div className="absolute bottom-4 left-4 right-4">
+          <Button variant="outline" className="w-full" onClick={onLogout}>
+            <LogOut className="mr-2 h-4 w-4" /> Logout
           </Button>
         </div>
       </div>
@@ -447,7 +478,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-4">
+        <main className="flex-1 overflow-auto p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="hidden">
               {accessibleTabs.map((tab) => (
@@ -468,42 +499,101 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
                   </p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Card className="bg-emerald-500">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                      <CardTitle className="text-2xl font-bold text-white">
-                        3
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Messages
                       </CardTitle>
-                      <Calendar className="w-6 h-6 text-white" />
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <p className="text-xl font-medium text-white">
-                        Appointments
+                      <div className="text-2xl font-bold">
+                        {messages.length}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        +2 new messages
                       </p>
                     </CardContent>
                   </Card>
-                  <Card className="bg-rose-500">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                      <CardTitle className="text-2xl font-bold text-white">
-                        10
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Appointments
                       </CardTitle>
-                      <Users className="w-6 h-6 text-white" />
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <p className="text-xl font-medium text-white">Patients</p>
+                      <div className="text-2xl font-bold">
+                        {appointments.length}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        +3 new appointments
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Pets
+                      </CardTitle>
+                      <PawPrint className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{pets.length}</div>
+                      <p className="text-xs text-muted-foreground">
+                        +1 new pet registered
+                      </p>
                     </CardContent>
                   </Card>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                   <Card className="col-span-4">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                      <CardTitle>Appointments</CardTitle>
+                    <CardHeader className="flex justify-between items-center">
+                      <CardTitle>Recent Messages</CardTitle>
                       <Button
                         variant="ghost"
-                        className="text-sm text-muted-foreground"
+                        size="sm"
+                        onClick={() => handleNavClick("messages")}
                       >
-                        View all
+                        View All
+                      </Button>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-8">
+                        {messages.map((message) => (
+                          <div key={message.id} className="flex items-center">
+                            <Avatar className="h-9 w-9">
+                              <AvatarFallback>
+                                {message.sender[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="ml-4 space-y-1">
+                              <p className="text-sm font-medium leading-none">
+                                {message.sender}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {message.message}
+                              </p>
+                            </div>
+                            <div className="ml-auto font-medium text-sm text-muted-foreground">
+                              {message.time}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card className="col-span-3">
+                    <CardHeader className="flex justify-between items-center">
+                      <CardTitle>Recent Appointments</CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleNavClick("appointments")}
+                      >
+                        View All
                       </Button>
                     </CardHeader>
                     <CardContent>
@@ -514,7 +604,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
                             className="flex items-center"
                           >
                             <Avatar className="h-9 w-9">
-                              <AvatarFallback className="bg-muted">
+                              <AvatarFallback>
                                 {appointment.patientName.charAt(0)}
                               </AvatarFallback>
                             </Avatar>
@@ -529,10 +619,10 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
                             <div
                               className={`ml-auto inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                                 appointment.status === "completed"
-                                  ? "bg-emerald-500/10 text-emerald-500"
+                                  ? "bg-green-100 text-green-800"
                                   : appointment.status === "cancelled"
-                                  ? "bg-rose-500/10 text-rose-500"
-                                  : "bg-orange-500/10 text-orange-500"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-blue-100 text-blue-800"
                               }`}
                             >
                               {appointment.status.charAt(0).toUpperCase() +
@@ -543,17 +633,35 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="col-span-3">
-                    <CardHeader>
-                      <CardTitle>Patients</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[200px] flex items-center justify-center text-muted-foreground">
-                        Chart will be implemented here
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Patient History</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Pet Name</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Diagnosis</TableHead>
+                          <TableHead>Treatment</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {patientHistory.map((history) => (
+                          <TableRow key={history.id}>
+                            <TableCell>{history.petName}</TableCell>
+                            <TableCell>{history.date}</TableCell>
+                            <TableCell>{history.diagnosis}</TableCell>
+                            <TableCell>{history.treatment}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
 
