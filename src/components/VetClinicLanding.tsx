@@ -14,6 +14,7 @@ import LoginPage from "./LoginPage";
 import { PetMedicalHistory } from "./PetMedicalHistory";
 import { AdminDashboard } from "./AdminDashboard";
 import { patients } from "@/utils/sharedUtils";
+import { AppointmentDialog } from "@/components/AppointmentDialog";
 
 type UserRole = "customer" | "staff" | "admin";
 
@@ -275,9 +276,13 @@ export default function VetClinicLanding() {
                     </p>
                   </div>
                   <div className="space-x-4">
-                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                      Book Appointment
-                    </Button>
+                    <AppointmentDialog
+                      trigger={
+                        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                          Book Appointment
+                        </Button>
+                      }
+                    />
                     <Button
                       variant="outline"
                       className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
