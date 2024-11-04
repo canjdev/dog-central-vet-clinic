@@ -70,3 +70,8 @@ export const patients = [
       "https://i.pinimg.com/736x/e5/b9/81/e5b98110fcd62d6ebe0e636262170175.jpg",
   },
 ];
+export const helpers = [
+  { name: "John Smith", role: "Veterinary Technician" },
+  { name: "Emily Brown", role: "Groomer" },
+  { name: "Michael Lee", role: "Veterinary Assistant" },
+];

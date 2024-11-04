@@ -34,7 +34,6 @@ import {
   Trash,
   FileText,
   UserCog,
-  DollarSign,
   Send,
   Smile,
   Paperclip,
