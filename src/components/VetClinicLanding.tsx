@@ -30,7 +30,7 @@ interface User {
   username: string;
   role: UserRole;
 }
-interface ServiceType {
+interface Service {
   name: string;
   description: string;
   image: string;
@@ -281,21 +281,42 @@ export default function VetClinicLanding() {
                 className="w-full py-12 md:py-24 lg:py-32 bg-background"
               >
                 <div className="container px-4 md:px-6">
-                  <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-8 text-primary">
+                  <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary">
                     Our Services
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {services.map((service, index) => (
-                      <Card key={index} className="bg-secondary">
-                        <CardContent className="p-6">
-                          <h3 className="text-xl font-bold mb-2 text-secondary-foreground">
-                            {service.name}
-                          </h3>
-                          <p className="text-secondary-foreground/80">
-                            {service.description}
-                          </p>
-                        </CardContent>
-                      </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                    {services.map((service: Service, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col items-center text-center"
+                      >
+                        <div
+                          className="relative group cursor-pointer"
+                          onClick={() => navigate("/appointment")}
+                        >
+                          <div className="w-48 h-48 rounded-full overflow-hidden mb-6 border-4 border-secondary transition-transform transform group-hover:scale-105">
+                            <img
+                              src={service.image}
+                              alt={service.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="secondary"
+                              className="bg-primary/90 text-primary-foreground"
+                            >
+                              Book Now
+                            </Button>
+                          </div>
+                        </div>
+                        <h3 className="text-xl font-bold mb-2">
+                          {service.name}
+                        </h3>
+                        <p className="text-muted-foreground">
+                          {service.description}
+                        </p>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -306,82 +327,115 @@ export default function VetClinicLanding() {
                 className="w-full py-12 md:py-24 lg:py-32 bg-background"
               >
                 <div className="container px-4 md:px-6">
-                  <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-8 text-primary">
+                  <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary">
                     Our Team
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    <Card className="flex flex-col bg-secondary">
-                      <CardContent className="p-6 flex-grow">
-                        <div className="flex flex-col items-center mb-4">
-                          <Avatar className="w-32 h-32 mb-4">
-                            <AvatarImage
-                              src={vets[0].image}
-                              alt={vets[0].name}
-                            />
-                            <AvatarFallback>
-                              {vets[0].name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <h3 className="text-xl font-bold text-center text-secondary-foreground">
-                            {vets[0].name}
-                          </h3>
-                          <p className="text-secondary-foreground/80">
-                            {vets[0].role}
-                          </p>
-                        </div>
-                        <div className="mt-4">
-                          <h4 className="font-semibold mb-2 text-secondary-foreground">
-                            Schedule:
-                          </h4>
-                          <ul className="space-y-1">
-                            {vets[0].schedule.map((slot, slotIndex) => (
-                              <li
-                                key={slotIndex}
-                                className="text-sm text-secondary-foreground/80"
-                              >
-                                <span className="font-medium">{slot.day}:</span>{" "}
-                                {slot.hours}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card className="flex flex-col bg-secondary">
-                      <CardContent className="p-6 flex-grow">
-                        <h3 className="text-xl font-bold mb-4 text-secondary-foreground">
-                          Our Helpers
-                        </h3>
-                        <ul className="space-y-2">
-                          {helpers.map((helper, index) => (
-                            <li
-                              key={index}
-                              className="flex items-center space-x-2"
-                            >
-                              <Avatar className="w-10 h-10">
-                                <AvatarFallback>
-                                  {helper.name
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-medium text-secondary-foreground">
-                                  {helper.name}
-                                </p>
-                                <p className="text-sm text-secondary-foreground/80">
-                                  {helper.role}
-                                </p>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </Card>
+
+                  {/* Lead Doctor Carousel */}
+                  <div className="max-w-3xl mx-auto mb-16">
+                    <Carousel className="w-full">
+                      <CarouselContent>
+                        {vets.map((vet, index) => (
+                          <CarouselItem key={index}>
+                            <Card className="bg-secondary">
+                              <CardContent className="p-6">
+                                <div className="flex flex-col items-center">
+                                  <Avatar className="w-32 h-32 mb-6">
+                                    <AvatarImage
+                                      src={vet.image}
+                                      alt={vet.name}
+                                    />
+                                    <AvatarFallback>
+                                      {vet.name
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <h3 className="text-2xl font-bold text-center text-secondary-foreground mb-2">
+                                    {vet.name}
+                                  </h3>
+                                  <p className="text-secondary-foreground/80 mb-4">
+                                    {vet.role}
+                                  </p>
+                                  <div className="mb-6">
+                                    <Quote className="w-8 h-8 mx-auto mb-4 text-primary" />
+                                    <p className="text-lg italic text-center text-secondary-foreground">
+                                      "Dedicated to providing the best care for
+                                      your furry friends."
+                                    </p>
+                                  </div>
+                                  <div className="w-full">
+                                    <h4 className="font-semibold mb-2 text-secondary-foreground">
+                                      Schedule:
+                                    </h4>
+                                    <ul className="space-y-1">
+                                      {vet.schedule.map((slot, slotIndex) => (
+                                        <li
+                                          key={slotIndex}
+                                          className="text-sm text-secondary-foreground/80"
+                                        >
+                                          <span className="font-medium">
+                                            {slot.day}:
+                                          </span>{" "}
+                                          {slot.hours}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious />
+                      <CarouselNext />
+                    </Carousel>
+                  </div>
+
+                  {/* Helpers Carousel */}
+                  <div className="max-w-2xl mx-auto">
+                    <h3 className="text-2xl font-bold text-center mb-8">
+                      Our Dedicated Team
+                    </h3>
+                    <Carousel className="w-full">
+                      <CarouselContent>
+                        {helpers.map((helper, index) => (
+                          <CarouselItem key={index}>
+                            <Card className="bg-secondary">
+                              <CardContent className="p-6">
+                                <div className="flex flex-col items-center">
+                                  <Avatar className="w-24 h-24 mb-4">
+                                    <AvatarFallback>
+                                      {helper.name
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <h4 className="text-xl font-bold text-center text-secondary-foreground mb-2">
+                                    {helper.name}
+                                  </h4>
+                                  <p className="text-secondary-foreground/80 mb-4">
+                                    {helper.role}
+                                  </p>
+                                  <div>
+                                    <Quote className="w-6 h-6 mx-auto mb-3 text-primary" />
+                                    <p className="text-sm italic text-center text-secondary-foreground">
+                                      "Committed to ensuring the comfort and
+                                      well-being of every pet we care for."
+                                    </p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious />
+                      <CarouselNext />
+                    </Carousel>
                   </div>
                 </div>
               </section>

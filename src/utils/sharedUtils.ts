@@ -1,77 +1,123 @@
-export const services = [
-  {
-    name: "Vaccinations",
-    description: "Keep your pet healthy with up-to-date vaccinations",
-  },
+export interface Service {
+  name: string;
+  description: string;
+  image: string;
+}
+
+export interface Schedule {
+  day: string;
+  hours: string;
+}
+
+export interface Vet {
+  name: string;
+  image: string;
+  role: string;
+  schedule: Schedule[];
+  quote: string;
+}
+
+export interface Helper {
+  name: string;
+  role: string;
+  quote: string;
+}
+
+export interface Patient {
+  name: string;
+  breed: string;
+  image: string;
+}
+
+export const services: Service[] = [
   {
     name: "Surgery",
-    description: "Expert surgical care for your furry friends",
+    description:
+      "Our veterinarians can perform orthopedic and soft tissue surgeries your pet may require.",
+    image:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/surgery-zWMhbQVXBXTBXDDXvAkwwxVFEXtBZg.jpg",
   },
-  { name: "Dental Care", description: "Maintain your pet's oral health" },
   {
-    name: "Nutrition Counseling",
-    description: "Personalized diet plans for optimal pet health",
+    name: "24 Hour Care",
+    description:
+      "Continuous care at our vet clinic means constant attention for your pet's health, day or night.",
+    image:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/24hourcare-Zy0Ue7q9lCBXzkvppgQZQBXbcEMqZQ.jpg",
+  },
+  {
+    name: "Vaccination",
+    description:
+      "Quick, safe vaccinations available at your convenience, protecting your pet's health with ease.",
+    image:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/vaccination-sPXXXXXXXXXXXXXXXXXXXXXXXXXXXX.jpg",
   },
 ];
 
-export const vets = [
+export const vets: Vet[] = [
   {
     name: "Dr. Sarah Johnson",
-    image: "/placeholder.svg?height=200&width=200",
+    image:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/vet1-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.jpg",
+    role: "Lead Veterinarian",
     schedule: [
-      { day: "Monday", hours: "9:00 AM - 5:00 PM" },
-      { day: "Wednesday", hours: "10:00 AM - 6:00 PM" },
-      { day: "Friday", hours: "9:00 AM - 4:00 PM" },
+      { day: "Mon-Fri", hours: "9:00 AM - 5:00 PM" },
+      { day: "Sat", hours: "10:00 AM - 2:00 PM" },
     ],
+    quote:
+      "Every pet deserves the highest quality of care. That's our promise to you and your furry family members.",
   },
   {
     name: "Dr. Michael Lee",
-    image: "/placeholder.svg?height=200&width=200",
+    image:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/vet2-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.jpg",
+    role: "Veterinary Surgeon",
     schedule: [
-      { day: "Tuesday", hours: "8:00 AM - 4:00 PM" },
-      { day: "Thursday", hours: "11:00 AM - 7:00 PM" },
-      { day: "Saturday", hours: "10:00 AM - 2:00 PM" },
+      { day: "Mon-Thu", hours: "8:00 AM - 4:00 PM" },
+      { day: "Fri", hours: "8:00 AM - 12:00 PM" },
     ],
-  },
-  {
-    name: "Dr. Emily Chen",
-    image: "/placeholder.svg?height=200&width=200",
-    schedule: [
-      { day: "Monday", hours: "11:00 AM - 7:00 PM" },
-      { day: "Wednesday", hours: "9:00 AM - 5:00 PM" },
-      { day: "Friday", hours: "10:00 AM - 6:00 PM" },
-    ],
+    quote:
+      "Surgical excellence and compassionate care are the cornerstones of our practice.",
   },
 ];
 
-export const patients = [
+export const helpers: Helper[] = [
   {
-    name: "Shoyo",
-    breed: "Patay Gutom",
-    image:
-      "https://i.natgeofe.com/n/548467d8-c5f1-4551-9f58-6817a8d2c45e/NationalGeographic_2572187_3x4.jpg",
+    name: "Emily Brown",
+    role: "Veterinary Technician",
+    quote:
+      "I'm passionate about ensuring every pet receives the best possible care and comfort.",
   },
   {
-    name: "Yuna",
-    breed: "Dugyot",
-    image:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/800px-Cat_November_2010-1a.jpg",
+    name: "John Smith",
+    role: "Veterinary Assistant",
+    quote:
+      "Working with animals is not just a job, it's a calling. I'm here to make a difference in their lives.",
   },
   {
-    name: "Twig",
-    breed: "Mabaho",
-    image:
-      "https://www.boredpanda.com/blog/wp-content/uploads/2023/04/644a230e3f5d4_l7ink8py2vta1__700.jpg",
-  },
-  {
-    name: "Twilly",
-    breed: "Iyakin",
-    image:
-      "https://i.pinimg.com/736x/e5/b9/81/e5b98110fcd62d6ebe0e636262170175.jpg",
+    name: "Lisa Chen",
+    role: "Groomer",
+    quote:
+      "A well-groomed pet is a happy pet. I love making our furry friends look and feel their best!",
   },
 ];
-export const helpers = [
-  { name: "John Smith", role: "Veterinary Technician" },
-  { name: "Emily Brown", role: "Groomer" },
-  { name: "Michael Lee", role: "Veterinary Assistant" },
+
+export const patients: Patient[] = [
+  {
+    name: "Max",
+    breed: "Golden Retriever",
+    image:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/patient1-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.jpg",
+  },
+  {
+    name: "Bella",
+    breed: "Siamese Cat",
+    image:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/patient2-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.jpg",
+  },
+  {
+    name: "Charlie",
+    breed: "Beagle",
+    image:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/patient3-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.jpg",
+  },
 ];
