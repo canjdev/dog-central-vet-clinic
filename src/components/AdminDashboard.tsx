@@ -47,8 +47,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+export type UserRole = "customer" | "staff" | "veterinarian" | "admin";
 interface AdminDashboardProps {
-  userRole: "admin" | "veterinarian" | "staff";
+  userRole: UserRole;
   onLogout: () => void;
 }
 

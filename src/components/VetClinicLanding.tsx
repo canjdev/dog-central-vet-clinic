@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   MessageCircle,
   Send,
@@ -24,16 +25,11 @@ import {
 } from "@/components/ui/carousel";
 import { Quote } from "lucide-react";
 
-type UserRole = "customer" | "staff" | "admin" | "veterinarian";
+type UserRole = "customer" | "staff" | "veterinarian" | "admin";
 
 interface User {
   username: string;
   role: UserRole;
-}
-interface Service {
-  name: string;
-  description: string;
-  image: string;
 }
 
 export default function VetClinicLanding() {
@@ -73,8 +69,8 @@ export default function VetClinicLanding() {
   const handleLogin = (user: User) => {
     setLoggedInUser(user);
     if (user.role === "customer") {
-      setActiveTab("medical-history");
-      navigate("/medical-history");
+      setActiveTab("home");
+      navigate("/");
     } else {
       setActiveTab("admin-dashboard");
       navigate("/admin-dashboard");
@@ -99,7 +95,6 @@ export default function VetClinicLanding() {
             onClick={(e) => {
               e.preventDefault();
               setActiveTab("home");
-              navigate("/");
             }}
           >
             Home
@@ -143,7 +138,6 @@ export default function VetClinicLanding() {
             onClick={(e) => {
               e.preventDefault();
               setActiveTab("home");
-              navigate("/");
             }}
           >
             Home
@@ -158,7 +152,6 @@ export default function VetClinicLanding() {
             onClick={(e) => {
               e.preventDefault();
               setActiveTab("medical-history");
-              navigate("/medical-history");
             }}
           >
             Medical History
@@ -167,7 +160,7 @@ export default function VetClinicLanding() {
       );
     }
 
-    // For staff, veterinary, and admin roles
+    // For staff, veterinarian, and admin roles
     return (
       <a
         className={`transition-colors hover:text-primary ${
@@ -177,12 +170,261 @@ export default function VetClinicLanding() {
         onClick={(e) => {
           e.preventDefault();
           setActiveTab("admin-dashboard");
-          navigate("/admin-dashboard");
         }}
       >
         Dashboard
       </a>
     );
+  };
+
+  const renderHomeContent = () => (
+    <>
+      <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-secondary">
+        <div className="container px-4 md:px-6">
+          <div className="flex flex-col items-center space-y-4 text-center">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none text-secondary-foreground">
+                Welcome to Dog Central Clinic
+              </h1>
+              <p className="mx-auto max-w-[700px] text-secondary-foreground/80 md:text-xl">
+                Providing compassionate care for your furry friends. Your pets
+                deserve the best, and we're here to deliver it.
+              </p>
+            </div>
+            <div className="space-x-4">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                Book Appointment
+              </Button>
+              <Button
+                variant="outline"
+                className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              >
+                Learn More
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="services"
+        className="w-full py-12 md:py-24 lg:py-32 bg-background"
+      >
+        <div className="container px-4 md:px-6">
+          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary">
+            Our Services
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {services.map((service, index) => (
+              <div
+                key={index}
+                className="flex flex-col items-center text-center"
+              >
+                <div
+                  className="relative group cursor-pointer"
+                  onClick={() => navigate("/appointment")}
+                >
+                  <div className="w-48 h-48 rounded-full overflow-hidden mb-6 border-4 border-secondary transition-transform transform group-hover:scale-105">
+                    <img
+                      src={service.image}
+                      alt={service.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="secondary"
+                      className="bg-primary/90 text-primary-foreground"
+                    >
+                      Book Now
+                    </Button>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold mb-2">{service.name}</h3>
+                <p className="text-muted-foreground">{service.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="vets"
+        className="w-full py-12 md:py-24 lg:py-32 bg-background"
+      >
+        <div className="container px-4 md:px-6">
+          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary">
+            Our Team
+          </h2>
+
+          {/* Lead Doctor Carousel */}
+          <div className="max-w-3xl mx-auto mb-16">
+            <Carousel className="w-full">
+              <CarouselContent>
+                {vets.map((vet, index) => (
+                  <CarouselItem key={index}>
+                    <Card className="bg-secondary">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col items-center">
+                          <Avatar className="w-32 h-32 mb-6">
+                            <AvatarImage src={vet.image} alt={vet.name} />
+                            <AvatarFallback>
+                              {vet.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <h3 className="text-2xl font-bold text-center text-secondary-foreground mb-2">
+                            {vet.name}
+                          </h3>
+                          <p className="text-secondary-foreground/80 mb-4">
+                            {vet.role}
+                          </p>
+                          <div className="mb-6">
+                            <Quote className="w-8 h-8 mx-auto mb-4 text-primary" />
+                            <p className="text-lg italic text-center text-secondary-foreground">
+                              {vet.quote}
+                            </p>
+                          </div>
+                          <div className="w-full">
+                            <h4 className="font-semibold mb-2 text-secondary-foreground">
+                              Schedule:
+                            </h4>
+                            <ul className="space-y-1">
+                              {vet.schedule.map((slot, slotIndex) => (
+                                <li
+                                  key={slotIndex}
+                                  className="text-sm text-secondary-foreground/80"
+                                >
+                                  <span className="font-medium">
+                                    {slot.day}:
+                                  </span>{" "}
+                                  {slot.hours}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
+          </div>
+
+          {/* Helpers Carousel */}
+          <div className="max-w-2xl mx-auto">
+            <h3 className="text-2xl font-bold text-center mb-8">
+              Our Dedicated Team
+            </h3>
+            <Carousel className="w-full">
+              <CarouselContent>
+                {helpers.map((helper, index) => (
+                  <CarouselItem key={index}>
+                    <Card className="bg-secondary">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col items-center">
+                          <Avatar className="w-24 h-24 mb-4">
+                            <AvatarFallback>
+                              {helper.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <h4 className="text-xl font-bold text-center text-secondary-foreground mb-2">
+                            {helper.name}
+                          </h4>
+                          <p className="text-secondary-foreground/80 mb-4">
+                            {helper.role}
+                          </p>
+                          <div>
+                            <Quote className="w-6 h-6 mx-auto mb-3 text-primary" />
+                            <p className="text-sm italic text-center text-secondary-foreground">
+                              {helper.quote}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="patients"
+        className="w-full py-12 md:py-24 lg:py-32 bg-secondary"
+      >
+        <div className="container px-4 md:px-6">
+          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-8 text-secondary-foreground">
+            Happy Patients
+          </h2>
+          <div className="relative w-full max-w-2xl mx-auto">
+            <div className="overflow-hidden rounded-lg shadow-lg">
+              <div className="relative aspect-w-16 aspect-h-9">
+                <img
+                  src={patients[currentPatientIndex].image}
+                  alt={patients[currentPatientIndex].name}
+                  className="w-full h-full object-cover transition-opacity duration-500"
+                />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 bg-black bg-opacity-50">
+                  <div className="text-white text-center">
+                    <h3 className="text-2xl font-bold">
+                      {patients[currentPatientIndex].name}
+                    </h3>
+                    <p className="text-lg">
+                      {patients[currentPatientIndex].breed}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={prevPatient}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={nextPatient}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "home":
+        return renderHomeContent();
+      case "login":
+        return <LoginPage onLogin={handleLogin} />;
+      case "admin-dashboard":
+        return (
+          <AdminDashboard
+            userRole={loggedInUser?.role || "staff"}
+            onLogout={handleLogout}
+          />
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -245,265 +487,27 @@ export default function VetClinicLanding() {
       </header>
 
       <main className="flex-1">
-        {activeTab === "home" &&
-          (!loggedInUser || loggedInUser.role === "customer") && (
-            <>
-              <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-secondary">
-                <div className="container px-4 md:px-6">
-                  <div className="flex  flex-col items-center space-y-4 text-center">
-                    <div className="space-y-2">
-                      <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none text-secondary-foreground">
-                        Welcome to Dog Central Clinic
-                      </h1>
-                      <p className="mx-auto max-w-[700px] text-secondary-foreground/80 md:text-xl">
-                        Providing compassionate care for your furry friends.
-                        Your pets deserve the best, and we're here to deliver
-                        it.
-                      </p>
-                    </div>
-                    <div className="space-x-4">
-                      <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                        Book Appointment
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      >
-                        Learn More
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <section
-                id="services"
-                className="w-full py-12 md:py-24 lg:py-32 bg-background"
+        {loggedInUser && loggedInUser.role === "customer" ? (
+          <Tabs defaultValue="home" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="home" onClick={() => setActiveTab("home")}>
+                Home
+              </TabsTrigger>
+              <TabsTrigger
+                value="medical-history"
+                onClick={() => setActiveTab("medical-history")}
               >
-                <div className="container px-4 md:px-6">
-                  <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary">
-                    Our Services
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                    {services.map((service: Service, index) => (
-                      <div
-                        key={index}
-                        className="flex flex-col items-center text-center"
-                      >
-                        <div
-                          className="relative group cursor-pointer"
-                          onClick={() => navigate("/appointment")}
-                        >
-                          <div className="w-48 h-48 rounded-full overflow-hidden mb-6 border-4 border-secondary transition-transform transform group-hover:scale-105">
-                            <img
-                              src={service.image}
-                              alt={service.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="secondary"
-                              className="bg-primary/90 text-primary-foreground"
-                            >
-                              Book Now
-                            </Button>
-                          </div>
-                        </div>
-                        <h3 className="text-xl font-bold mb-2">
-                          {service.name}
-                        </h3>
-                        <p className="text-muted-foreground">
-                          {service.description}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </section>
-
-              <section
-                id="vets"
-                className="w-full py-12 md:py-24 lg:py-32 bg-background"
-              >
-                <div className="container px-4 md:px-6">
-                  <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary">
-                    Our Team
-                  </h2>
-
-                  {/* Lead Doctor Carousel */}
-                  <div className="max-w-3xl mx-auto mb-16">
-                    <Carousel className="w-full">
-                      <CarouselContent>
-                        {vets.map((vet, index) => (
-                          <CarouselItem key={index}>
-                            <Card className="bg-secondary">
-                              <CardContent className="p-6">
-                                <div className="flex flex-col items-center">
-                                  <Avatar className="w-32 h-32 mb-6">
-                                    <AvatarImage
-                                      src={vet.image}
-                                      alt={vet.name}
-                                    />
-                                    <AvatarFallback>
-                                      {vet.name
-                                        .split(" ")
-                                        .map((n) => n[0])
-                                        .join("")}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <h3 className="text-2xl font-bold text-center text-secondary-foreground mb-2">
-                                    {vet.name}
-                                  </h3>
-                                  <p className="text-secondary-foreground/80 mb-4">
-                                    {vet.role}
-                                  </p>
-                                  <div className="mb-6">
-                                    <Quote className="w-8 h-8 mx-auto mb-4 text-primary" />
-                                    <p className="text-lg italic text-center text-secondary-foreground">
-                                      "Dedicated to providing the best care for
-                                      your furry friends."
-                                    </p>
-                                  </div>
-                                  <div className="w-full">
-                                    <h4 className="font-semibold mb-2 text-secondary-foreground">
-                                      Schedule:
-                                    </h4>
-                                    <ul className="space-y-1">
-                                      {vet.schedule.map((slot, slotIndex) => (
-                                        <li
-                                          key={slotIndex}
-                                          className="text-sm text-secondary-foreground/80"
-                                        >
-                                          <span className="font-medium">
-                                            {slot.day}:
-                                          </span>{" "}
-                                          {slot.hours}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </CarouselItem>
-                        ))}
-                      </CarouselContent>
-                      <CarouselPrevious />
-                      <CarouselNext />
-                    </Carousel>
-                  </div>
-
-                  {/* Helpers Carousel */}
-                  <div className="max-w-2xl mx-auto">
-                    <h3 className="text-2xl font-bold text-center mb-8">
-                      Our Dedicated Team
-                    </h3>
-                    <Carousel className="w-full">
-                      <CarouselContent>
-                        {helpers.map((helper, index) => (
-                          <CarouselItem key={index}>
-                            <Card className="bg-secondary">
-                              <CardContent className="p-6">
-                                <div className="flex flex-col items-center">
-                                  <Avatar className="w-24 h-24 mb-4">
-                                    <AvatarFallback>
-                                      {helper.name
-                                        .split(" ")
-                                        .map((n) => n[0])
-                                        .join("")}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <h4 className="text-xl font-bold text-center text-secondary-foreground mb-2">
-                                    {helper.name}
-                                  </h4>
-                                  <p className="text-secondary-foreground/80 mb-4">
-                                    {helper.role}
-                                  </p>
-                                  <div>
-                                    <Quote className="w-6 h-6 mx-auto mb-3 text-primary" />
-                                    <p className="text-sm italic text-center text-secondary-foreground">
-                                      "Committed to ensuring the comfort and
-                                      well-being of every pet we care for."
-                                    </p>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </CarouselItem>
-                        ))}
-                      </CarouselContent>
-                      <CarouselPrevious />
-                      <CarouselNext />
-                    </Carousel>
-                  </div>
-                </div>
-              </section>
-
-              <section
-                id="patients"
-                className="w-full py-12 md:py-24 lg:py-32 bg-secondary"
-              >
-                <div className="container px-4 md:px-6">
-                  <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-8 text-secondary-foreground">
-                    Happy Patients
-                  </h2>
-                  <div className="relative w-full max-w-2xl mx-auto">
-                    <div className="overflow-hidden rounded-lg shadow-lg">
-                      <div className="relative aspect-w-16 aspect-h-9">
-                        <img
-                          src={patients[currentPatientIndex].image}
-                          alt={patients[currentPatientIndex].name}
-                          className="w-full h-full object-cover transition-opacity duration-500"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 bg-black bg-opacity-50">
-                          <div className="text-white text-center">
-                            <h3 className="text-2xl font-bold">
-                              {patients[currentPatientIndex].name}
-                            </h3>
-                            <p className="text-lg">
-                              {patients[currentPatientIndex].breed}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-primary text-primary-foreground hover:bg-primary/90"
-                      onClick={prevPatient}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-primary text-primary-foreground hover:bg-primary/90"
-                      onClick={nextPatient}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </section>
-            </>
-          )}
-
-        {activeTab === "login" && !loggedInUser && (
-          <LoginPage onLogin={handleLogin} />
+                Medical History
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="home">{renderHomeContent()}</TabsContent>
+            <TabsContent value="medical-history">
+              <PetMedicalHistory />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          renderContent()
         )}
-
-        {activeTab === "medical-history" &&
-          loggedInUser &&
-          loggedInUser.role === "customer" && <PetMedicalHistory />}
-
-        {activeTab === "admin-dashboard" &&
-          loggedInUser &&
-          loggedInUser.role !== "customer" && (
-            <AdminDashboard
-              userRole={loggedInUser.role}
-              onLogout={handleLogout}
-            />
-          )}
       </main>
 
       <footer id="contact" className="w-full py-6 bg-secondary">
