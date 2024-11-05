@@ -103,18 +103,18 @@ export const helpers: Helper[] = [
 
 export const patients: Patient[] = [
   {
-    name: "Max",
-    breed: "Golden Retriever",
-    image: "/placeholder.svg?height=400&width=600",
+    name: "Shoyo",
+    breed: "Persian X Puspin",
+    image: "/src/assets/gallery_1.png",
   },
   {
-    name: "Bella",
-    breed: "Siamese Cat",
-    image: "/placeholder.svg?height=400&width=600",
+    name: "Yuna",
+    breed: "Turkish Angora",
+    image: "/src/assets/gallery_2.png",
   },
   {
-    name: "Charlie",
-    breed: "Beagle",
-    image: "/placeholder.svg?height=400&width=600",
+    name: "Twig",
+    breed: "Labrador",
+    image: "/src/assets/gallery_3.png",
   },
 ];
