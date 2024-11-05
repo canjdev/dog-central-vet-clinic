@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 
-type UserRole = "customer" | "staff" | "veterinary" | "admin";
+type UserRole = "customer" | "staff" | "veterinarian" | "admin";
 
 interface User {
   username: string;
@@ -16,7 +16,7 @@ interface User {
 const users: User[] = [
   { username: "customer1", password: "password1", role: "customer" },
   { username: "staff1", password: "password2", role: "staff" },
-  { username: "vet1", password: "password3", role: "veterinary" },
+  { username: "vet1", password: "password3", role: "veterinarian" },
   { username: "admin1", password: "password4", role: "admin" },
 ];
 

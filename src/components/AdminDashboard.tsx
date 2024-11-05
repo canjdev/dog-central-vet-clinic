@@ -217,7 +217,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
     },
   ]);
 
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages] = useState<Message[]>([
     {
       id: 1,
       sender: "John Doe",
@@ -315,7 +315,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
     { id: 3, name: "Staff User", email: "staff@example.com", role: "staff" },
   ]);
 
-  const [patientHistory, setPatientHistory] = useState<PatientHistory[]>([
+  const [patientHistory] = useState<PatientHistory[]>([
     {
       id: 1,
       petName: "Max",
