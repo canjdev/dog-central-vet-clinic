@@ -1,3 +1,4 @@
+// Define interfaces first
 export interface Service {
   name: string;
   description: string;
@@ -29,6 +30,7 @@ export interface Patient {
   image: string;
 }
 
+// Export the data
 export const services: Service[] = [
   {
     name: "Surgery",
@@ -56,8 +58,7 @@ export const services: Service[] = [
 export const vets: Vet[] = [
   {
     name: "Dr. Sarah Johnson",
-    image:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/vet1-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.jpg",
+    image: "/placeholder.svg?height=200&width=200",
     role: "Lead Veterinarian",
     schedule: [
       { day: "Mon-Fri", hours: "9:00 AM - 5:00 PM" },
@@ -68,8 +69,7 @@ export const vets: Vet[] = [
   },
   {
     name: "Dr. Michael Lee",
-    image:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/vet2-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.jpg",
+    image: "/placeholder.svg?height=200&width=200",
     role: "Veterinary Surgeon",
     schedule: [
       { day: "Mon-Thu", hours: "8:00 AM - 4:00 PM" },
@@ -105,19 +105,16 @@ export const patients: Patient[] = [
   {
     name: "Max",
     breed: "Golden Retriever",
-    image:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/patient1-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.jpg",
+    image: "/placeholder.svg?height=400&width=600",
   },
   {
     name: "Bella",
     breed: "Siamese Cat",
-    image:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/patient2-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.jpg",
+    image: "/placeholder.svg?height=400&width=600",
   },
   {
     name: "Charlie",
     breed: "Beagle",
-    image:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/patient3-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.jpg",
+    image: "/placeholder.svg?height=400&width=600",
   },
 ];
