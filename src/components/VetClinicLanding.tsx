@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -160,7 +160,6 @@ export default function VetClinicLanding() {
       );
     }
 
-    // For staff, veterinarian, and admin roles
     return (
       <a
         className={`transition-colors hover:text-primary ${
@@ -175,6 +174,39 @@ export default function VetClinicLanding() {
         Dashboard
       </a>
     );
+  };
+
+  const renderContent = () => {
+    if (loggedInUser && loggedInUser.role === "customer") {
+      return (
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="home">Home</TabsTrigger>
+            <TabsTrigger value="medical-history">Medical History</TabsTrigger>
+          </TabsList>
+          <TabsContent value="home">{renderHomeContent()}</TabsContent>
+          <TabsContent value="medical-history">
+            <PetMedicalHistory />
+          </TabsContent>
+        </Tabs>
+      );
+    }
+
+    switch (activeTab) {
+      case "home":
+        return renderHomeContent();
+      case "login":
+        return <LoginPage onLogin={handleLogin} />;
+      case "admin-dashboard":
+        return loggedInUser ? (
+          <AdminDashboard
+            userRole={loggedInUser.role}
+            onLogout={handleLogout}
+          />
+        ) : null;
+      default:
+        return null;
+    }
   };
 
   const renderHomeContent = () => (
@@ -486,29 +518,7 @@ export default function VetClinicLanding() {
         </div>
       </header>
 
-      <main className="flex-1">
-        {loggedInUser && loggedInUser.role === "customer" ? (
-          <Tabs defaultValue="home" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="home" onClick={() => setActiveTab("home")}>
-                Home
-              </TabsTrigger>
-              <TabsTrigger
-                value="medical-history"
-                onClick={() => setActiveTab("medical-history")}
-              >
-                Medical History
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="home">{renderHomeContent()}</TabsContent>
-            <TabsContent value="medical-history">
-              <PetMedicalHistory />
-            </TabsContent>
-          </Tabs>
-        ) : (
-          renderContent()
-        )}
-      </main>
+      <main className="flex-1">{renderContent()}</main>
 
       <footer id="contact" className="w-full py-6 bg-secondary">
         <div className="container px-4 md:px-6 flex flex-col md:flex-row justify-between items-center">
