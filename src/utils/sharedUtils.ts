@@ -105,16 +105,24 @@ export const patients: Patient[] = [
   {
     name: "Shoyo",
     breed: "Persian X Puspin",
-    image: "/src/assets/gallery_1.png",
+    image:
+      "https://i.pinimg.com/originals/1c/ce/44/1cce44a5cf2d805faebdbce46156b629.jpg",
   },
   {
     name: "Yuna",
     breed: "Turkish Angora",
-    image: "/src/assets/gallery_2.png",
+    image: "https://pbs.twimg.com/media/FJYYCYUX0AAF8YW?format=jpg&name=large",
   },
   {
     name: "Twig",
     breed: "Labrador",
-    image: "/src/assets/gallery_3.png",
+    image:
+      "https://i.pinimg.com/736x/7e/d0/47/7ed047f028d6954c5f50dacf7a96398d.jpg",
+  },
+  {
+    name: "Twilly",
+    breed: "Border Collie",
+    image:
+      "https://i.pinimg.com/originals/98/0c/87/980c871d6842155f42a48cb12170c14a.jpg",
   },
 ];

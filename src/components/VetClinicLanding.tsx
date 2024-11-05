@@ -237,12 +237,16 @@ export default function VetClinicLanding() {
                     />
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="secondary"
-                      className="bg-primary/90 text-primary-foreground"
-                    >
-                      Book Now
-                    </Button>
+                    <AppointmentDialog
+                      trigger={
+                        <Button
+                          variant="secondary"
+                          className="bg-primary/90 text-primary-foreground"
+                        >
+                          Book Now
+                        </Button>
+                      }
+                    />
                   </div>
                 </div>
                 <h3 className="text-xl font-bold mb-2">{service.name}</h3>
