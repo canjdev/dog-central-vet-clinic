@@ -12,7 +12,7 @@ function App() {
         <Route path="/login" element={<LoginPage onLogin={() => {}} />} />
         <Route path="/medical-history" element={<PetMedicalHistory />} />
         <Route
-          path="/admin-dashboard"
+          path="/dashboard"
           element={<AdminDashboard userRole="admin" onLogout={() => {}} />}
         />
       </Routes>
