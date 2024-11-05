@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/carousel";
 import { Quote } from "lucide-react";
 
-type UserRole = "customer" | "staff" | "veterinary" | "admin";
+type UserRole = "customer" | "staff" | "admin" | "veterinarian";
 
 interface User {
   username: string;

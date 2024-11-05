@@ -1,15 +1,22 @@
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import VetClinicLanding from "./components/VetClinicLanding";
-import { Route, Routes } from "react-router-dom";
 import LoginPage from "./components/LoginPage";
+import { PetMedicalHistory } from "./components/PetMedicalHistory";
 import { AdminDashboard } from "./components/AdminDashboard";
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<VetClinicLanding />} />
-      <Route path="/dashboard" element={<AdminDashboard />} />
-      <Route path="/login" element={<LoginPage onLogin={() => {}} />} />
-    </Routes>
+    <Router>
+      <Routes>
+        <Route path="/" element={<VetClinicLanding />} />
+        <Route path="/login" element={<LoginPage onLogin={() => {}} />} />
+        <Route path="/medical-history" element={<PetMedicalHistory />} />
+        <Route
+          path="/admin-dashboard"
+          element={<AdminDashboard userRole="admin" onLogout={() => {}} />}
+        />
+      </Routes>
+    </Router>
   );
 }
 
