@@ -1,6 +1,8 @@
 "use client";
-
-import { useState } from "react";
+import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
+import { Moon, Sun } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -136,7 +138,31 @@ interface Notification {
   time: string;
   read: boolean;
 }
+function ThemeToggle() {
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+      className="mr-6"
+    >
+      <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      <span className="sr-only">Toggle theme</span>
+    </Button>
+  );
+}
 export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
@@ -450,10 +476,10 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
   const accessibleTabs = getAccessibleTabs();
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 lg:flex-row">
+    <div className="flex flex-col h-screen bg-background lg:flex-row">
       {/* Sidebar */}
       <div
-        className={`w-64 bg-white shadow-md flex-shrink-0 fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out transform ${
+        className={`w-64 bg-background border-r shadow-md flex-shrink-0 fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:relative lg:translate-x-0`}
       >
@@ -488,7 +514,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white shadow-sm p-4">
+        <header className="bg-background border-b shadow-sm p-4">
           <div className="flex justify-between items-center">
             <Button
               variant="ghost"
@@ -499,7 +525,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
               <Menu className="h-6 w-6" />
             </Button>
             <div className="relative flex-1 max-w-xs mx-auto lg:mx-0">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search..."
@@ -507,7 +533,18 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
               />
             </div>
             <div className="flex items-center space-x-4">
+              <ThemeToggle />
               <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="relative">
+                    <Bell className="h-4 w-4" />
+                    {notifications.some((n) => !n.read) && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
+                        {notifications.filter((n) => !n.read).length}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" className="relative">
                     <Bell className="h-4 w-4" />
