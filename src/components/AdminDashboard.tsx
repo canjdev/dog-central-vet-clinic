@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,8 +36,8 @@ import {
   FileText,
   UserCog,
   Send,
-  Smile,
-  Paperclip,
+  Bell,
+  Check,
 } from "lucide-react";
 import {
   Table,
@@ -48,6 +49,7 @@ import {
 } from "@/components/ui/table";
 
 export type UserRole = "customer" | "staff" | "veterinarian" | "admin";
+
 interface AdminDashboardProps {
   userRole: UserRole;
   onLogout: () => void;
@@ -127,10 +129,18 @@ interface ChatMessage {
   timestamp: string;
 }
 
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+}
+
 export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
 
@@ -340,6 +350,30 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
     },
   ]);
 
+  const [notifications, setNotifications] = useState<Notification[]>([
+    {
+      id: 1,
+      title: "New Appointment",
+      message: "You have a new appointment request",
+      time: "5 min ago",
+      read: false,
+    },
+    {
+      id: 2,
+      title: "Medication Reminder",
+      message: "Don't forget to administer Max's medication",
+      time: "1 hour ago",
+      read: false,
+    },
+    {
+      id: 3,
+      title: "System Update",
+      message: "The system will undergo maintenance tonight",
+      time: "2 hours ago",
+      read: true,
+    },
+  ]);
+
   const handleNavClick = (tab: string) => {
     setActiveTab(tab.toLowerCase());
     setSidebarOpen(false);
@@ -357,24 +391,6 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
     setItems(items.filter((item) => item.id !== id));
   };
 
-  const handleMessageClick = (message: Message) => {
-    setSelectedMessage(message);
-    setChatMessages([
-      {
-        id: 1,
-        sender: message.sender,
-        content: message.message,
-        timestamp: message.time,
-      },
-      {
-        id: 2,
-        sender: "You",
-        content: "How can I help you today?",
-        timestamp: "Just now",
-      },
-    ]);
-  };
-
   const handleSendMessage = () => {
     if (newMessage.trim()) {
       setChatMessages([
@@ -390,13 +406,32 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
     }
   };
 
+  const handleLogout = () => {
+    onLogout();
+    navigate("/");
+  };
+
+  const markNotificationAsRead = (id: number) => {
+    setNotifications(
+      notifications.map((notification) =>
+        notification.id === id ? { ...notification, read: true } : notification
+      )
+    );
+  };
+
+  const deleteNotification = (id: number) => {
+    setNotifications(
+      notifications.filter((notification) => notification.id !== id)
+    );
+  };
+
   const getAccessibleTabs = () => {
     const commonTabs = [
       { icon: Calendar, label: "Overview" },
       { icon: Calendar, label: "Appointments" },
       { icon: Users, label: "Owners" },
       { icon: PawPrint, label: "Pets" },
-      { icon: MessageSquare, label: "Messages" },
+      { icon: Bell, label: "Notifications" },
       { icon: BookOpen, label: "Bookings" },
       { icon: ImageIcon, label: "Gallery" },
     ];
@@ -445,7 +480,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
           ))}
         </nav>
         <div className="absolute bottom-4 left-4 right-4">
-          <Button variant="outline" className="w-full" onClick={onLogout}>
+          <Button variant="outline" className="w-full" onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" /> Logout
           </Button>
         </div>
@@ -472,22 +507,58 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
               />
             </div>
             <div className="flex items-center space-x-4">
-              <button className="text-gray-400">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0  .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="relative">
+                    <Bell className="h-4 w-4" />
+                    {notifications.some((n) => !n.read) && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
+                        {notifications.filter((n) => !n.read).length}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                  {notifications.map((notification) => (
+                    <DropdownMenuItem
+                      key={notification.id}
+                      className="flex flex-col items-start p-4"
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="font-medium">
+                          {notification.title}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteNotification(notification.id)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {notification.message}
+                      </p>
+                      <div className="flex items-center justify-between w-full mt-2">
+                        <span className="text-xs text-muted-foreground">
+                          {notification.time}
+                        </span>
+                        {!notification.read && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              markNotificationAsRead(notification.id)
+                            }
+                          >
+                            <Check className="h-4 w-4 mr-1" /> Mark as read
+                          </Button>
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -514,7 +585,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
                       </p>
                     </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onLogout}>
+                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
@@ -866,7 +937,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
                               </label>
                               <Input
                                 id="pets"
-                                placeholder="Enter pets (comma separated)"
+                                placeholder="Enter pet names (comma separated)"
                               />
                             </div>
                             <div>
@@ -1059,113 +1130,56 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
               </Card>
             </TabsContent>
 
-            <TabsContent
-              value="messages"
-              className="h-[calc(100vh-8rem)] -mx-6 -my-6"
-            >
-              <div className="flex h-full">
-                {/* Messages sidebar */}
-                <div className="w-80 bg-white border-r">
-                  <div className="p-4 border-b">
-                    <h2 className="text-lg font-semibold">Messages</h2>
-                  </div>
-                  <div className="h-[calc(100%-4rem)] overflow-y-auto">
-                    {messages.map((message) => (
+            <TabsContent value="notifications">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notifications</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {notifications.map((notification) => (
                       <div
-                        key={message.id}
-                        className={`flex items-center p-4 gap-3 cursor-pointer hover:bg-gray-50 ${
-                          selectedMessage?.id === message.id
-                            ? "bg-gray-100"
-                            : ""
+                        key={notification.id}
+                        className={`p-4 rounded-lg border ${
+                          !notification.read ? "bg-muted" : ""
                         }`}
-                        onClick={() => handleMessageClick(message)}
                       >
-                        <Avatar className="h-10 w-10 flex-shrink-0">
-                          <AvatarFallback>{message.sender[0]}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start">
-                            <h3 className="font-medium text-sm">
-                              {message.sender}
-                            </h3>
-                            <span className="text-xs text-muted-foreground">
-                              {message.time}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {message.message}
-                          </p>
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">
+                            {notification.title}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteNotification(notification.id)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {notification.message}
+                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-muted-foreground">
+                            {notification.time}
+                          </span>
+                          {!notification.read && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                markNotificationAsRead(notification.id)
+                              }
+                            >
+                              <Check className="h-4 w-4 mr-1" /> Mark as read
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
-
-                {/* Chat area */}
-                <div className="flex-1 flex flex-col bg-white">
-                  {selectedMessage ? (
-                    <>
-                      <div className="px-4 h-16 flex items-center border-b">
-                        <h2 className="font-semibold">
-                          {selectedMessage.sender}
-                        </h2>
-                      </div>
-                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        {chatMessages.map((msg) => (
-                          <div
-                            key={msg.id}
-                            className={`flex ${
-                              msg.sender === "You"
-                                ? "justify-end"
-                                : "justify-start"
-                            }`}
-                          >
-                            <div
-                              className={`max-w-md px-4 py-2 rounded-lg ${
-                                msg.sender === "You"
-                                  ? "bg-primary text-primary-foreground ml-12"
-                                  : "bg-muted mr-12"
-                              }`}
-                            >
-                              <p className="text-sm">{msg.content}</p>
-                              <span className="text-xs opacity-75 block mt-1">
-                                {msg.timestamp}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="p-4 border-t">
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="text"
-                            placeholder="Type a message..."
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyPress={(e) =>
-                              e.key === "Enter" && handleSendMessage()
-                            }
-                            className="flex-1"
-                          />
-                          <Button size="icon" variant="ghost">
-                            <Smile className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost">
-                            <Paperclip className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" onClick={handleSendMessage}>
-                            <Send className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground">
-                      Select a message to start chatting
-                    </div>
-                  )}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="bookings">
@@ -1199,7 +1213,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
                               </label>
                               <Input
                                 id="service"
-                                placeholder="Enter service type"
+                                placeholder="Enter service name"
                               />
                             </div>
                             <div>
@@ -1347,8 +1361,8 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
                             alt={item.caption}
                             className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
                           />
-                          <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                            <p className="text-white text-center p-4">
+                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <p className="text-white text-center p-2">
                               {item.caption}
                             </p>
                           </div>
@@ -1420,7 +1434,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
                                 </label>
                                 <Input
                                   id="medication"
-                                  placeholder="Enter medication"
+                                  placeholder="Enter medication name"
                                 />
                               </div>
                               <div>
@@ -1611,6 +1625,56 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
           </Tabs>
         </main>
       </div>
+
+      {/* Messaging window (keep it outside of the Tabs) */}
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button className="fixed bottom-4 right-4" size="icon">
+            <MessageSquare className="h-4 w-4" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Messages</DialogTitle>
+          </DialogHeader>
+          <div className="h-[300px] overflow-y-auto space-y-4 p-4">
+            {chatMessages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${
+                  msg.sender === "You" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`max-w-[70%] px-4 py-2 rounded-lg ${
+                    msg.sender === "You"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  }`}
+                >
+                  <p className="text-sm">{msg.content}</p>
+                  <span className="text-xs opacity-75 block mt-1">
+                    {msg.timestamp}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 mt-4">
+            <Input
+              type="text"
+              placeholder="Type a message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+              className="flex-1"
+            />
+            <Button size="icon" onClick={handleSendMessage}>
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
