@@ -1,8 +1,4 @@
-"use client";
-
 import { useState } from "react";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -13,14 +9,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -28,276 +18,156 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-const formSchema = z.object({
-  petName: z.string().min(1, "Pet name is required"),
-  petType: z.string().min(1, "Pet type is required"),
-  service: z.string().min(1, "Service is required"),
-  date: z.date({
-    required_error: "Appointment date is required",
-  }),
-  timeSlot: z.string().min(1, "Time slot is required"),
-  ownerName: z.string().min(1, "Owner name is required"),
-  ownerEmail: z.string().email("Invalid email address"),
-  ownerPhone: z.string().min(1, "Phone number is required"),
-  notes: z.string().optional(),
-});
+export function AppointmentDialog({ trigger }: { trigger: React.ReactNode }) {
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
 
-interface AppointmentDialogProps {
-  trigger?: React.ReactNode;
-}
-
-export function AppointmentDialog({ trigger }: AppointmentDialogProps = {}) {
-  const [open, setOpen] = useState(false);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      notes: "",
-    },
-  });
-
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // Here you would typically send the appointment data to your backend
-    console.log(values);
-    // Show success message
-    alert("Appointment request submitted successfully!");
-    // Close the dialog
-    setOpen(false);
-    // Reset the form
-    form.reset();
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsConfirmationOpen(true);
+    setIsDialogOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || <Button>Book Appointment</Button>}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Book an Appointment</DialogTitle>
-          <DialogDescription>
-            Fill out the form below to schedule your pet's visit to Dog Central
-            Clinic.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="petName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pet's Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter pet's name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="petType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pet Type</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select pet type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="dog">Dog</SelectItem>
-                        <SelectItem value="cat">Cat</SelectItem>
-                        <SelectItem value="bird">Bird</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <DialogContent className="max-w-[400px] h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Book an Appointment</DialogTitle>
+            <DialogDescription>
+              Fill out the form below to schedule your pet's visit to Dog
+              Central Clinic.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="pet-name">Pet's Name</Label>
+                <Input id="pet-name" placeholder="Enter pet's name" required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="pet-type">Pet Type</Label>
+                <Select required>
+                  <SelectTrigger id="pet-type">
+                    <SelectValue placeholder="Select pet type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dog">Dog</SelectItem>
+                    <SelectItem value="cat">Cat</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="service">Service</Label>
+                <Select required>
+                  <SelectTrigger id="service">
+                    <SelectValue placeholder="Select service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="checkup">General Checkup</SelectItem>
+                    <SelectItem value="vaccination">Vaccination</SelectItem>
+                    <SelectItem value="grooming">Grooming</SelectItem>
+                    <SelectItem value="dental">Dental Cleaning</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Date</Label>
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  className="border rounded-md p-3"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="time">Time Slot</Label>
+                <Select required>
+                  <SelectTrigger id="time">
+                    <SelectValue placeholder="Select time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="9">9:00 AM</SelectItem>
+                    <SelectItem value="10">10:00 AM</SelectItem>
+                    <SelectItem value="11">11:00 AM</SelectItem>
+                    <SelectItem value="14">2:00 PM</SelectItem>
+                    <SelectItem value="15">3:00 PM</SelectItem>
+                    <SelectItem value="16">4:00 PM</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="owner-name">Owner's Name</Label>
+                <Input id="owner-name" placeholder="Enter your name" required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="Enter phone number"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="notes">Additional Notes</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Any special requirements or concerns?"
+                  className="h-[100px]"
+                />
+              </div>
+              <Button className="w-full mt-2" type="submit">
+                Schedule Appointment
+              </Button>
             </div>
-
-            <FormField
-              control={form.control}
-              name="service"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Service</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select service" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="checkup">General Checkup</SelectItem>
-                      <SelectItem value="vaccination">Vaccination</SelectItem>
-                      <SelectItem value="grooming">Grooming</SelectItem>
-                      <SelectItem value="dental">Dental Cleaning</SelectItem>
-                      <SelectItem value="emergency">Emergency Care</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Date</FormLabel>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={`w-full pl-3 text-left font-normal ${
-                          !field.value && "text-muted-foreground"
-                        }`}
-                        onClick={(e) => e.preventDefault()}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                      </Button>
-                    </FormControl>
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) =>
-                        date < new Date() || date < new Date("1900-01-01")
-                      }
-                      initialFocus
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="timeSlot"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Time Slot</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select time" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="morning">
-                          Morning (9AM - 12PM)
-                        </SelectItem>
-                        <SelectItem value="afternoon">
-                          Afternoon (1PM - 5PM)
-                        </SelectItem>
-                        <SelectItem value="evening">
-                          Evening (6PM - 8PM)
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="ownerName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Owner's Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="ownerPhone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter phone number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="ownerEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Enter your email"
-                      type="email"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Additional Notes</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Any special requirements or concerns?"
-                      className="resize-none"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button type="submit" className="w-full">
-              Schedule Appointment
-            </Button>
           </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={isConfirmationOpen}
+        onOpenChange={setIsConfirmationOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Appointment Confirmed</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your appointment has been successfully scheduled. We look forward
+              to seeing you and your pet!
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setIsConfirmationOpen(false)}>
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
