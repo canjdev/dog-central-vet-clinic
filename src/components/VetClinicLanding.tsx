@@ -71,7 +71,7 @@ export default function VetClinicLanding() {
     setLoggedInUser(user);
     if (user.role === "customer") {
       setActiveTab("home");
-      navigate("/");
+      navigate("/medical-history");
     } else {
       setActiveTab("admin-dashboard");
       navigate("/admin-dashboard");
