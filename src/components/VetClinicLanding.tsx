@@ -49,7 +49,7 @@ export default function VetClinicLanding() {
 
   const prevPatient = useCallback(() => {
     setCurrentPatientIndex(
-      (prevIndex) => (prevIndex - 1 + patients.length) % patients.length
+      (prevIndex) => (prevIndex - 1 + patients.length) % patients.length,
     );
   }, []);
 
@@ -68,17 +68,17 @@ export default function VetClinicLanding() {
     }
   }, [location]);
 
-  const handleLogin = (user: User) => {
-    setLoggedInUser(user);
-    if (user.role === "customer") {
-      setActiveTab("home");
-      navigate("/");
-    } else {
-      setActiveTab("admin-dashboard");
-      navigate("/admin-dashboard");
-    }
-  };
-
+  // const handleLogin = (user: User) => {
+  //   setLoggedInUser(user);
+  //   if (user.role === "customer") {
+  //     setActiveTab("home");
+  //     navigate("/");
+  //   } else {
+  //     setActiveTab("admin-dashboard");
+  //     navigate("/admin-dashboard");
+  //   }
+  // };
+  //
   const handleLogout = () => {
     setLoggedInUser(null);
     setActiveTab("home");
@@ -448,7 +448,7 @@ export default function VetClinicLanding() {
       case "home":
         return renderHomeContent();
       case "login":
-        return <LoginPage onLogin={handleLogin} />;
+        return <LoginPage />;
       case "admin-dashboard":
         return loggedInUser ? (
           <AdminDashboard

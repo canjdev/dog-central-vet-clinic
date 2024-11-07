@@ -6,12 +6,10 @@ import { Card } from "@/components/ui/card";
 import { CheckCircle } from "lucide-react";
 
 interface EmailVerificationPageProps {
-  email: string;
   onVerificationComplete: () => void;
 }
 
 export default function EmailVerificationPage({
-  email,
   onVerificationComplete,
 }: EmailVerificationPageProps) {
   const [verificationCode, setVerificationCode] = useState("");
@@ -48,7 +46,7 @@ export default function EmailVerificationPage({
       setError(
         err instanceof Error
           ? err.message
-          : "Invalid verification code. Please try again."
+          : "Invalid verification code. Please try again.",
       );
     }
   };
@@ -68,7 +66,7 @@ export default function EmailVerificationPage({
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to resend verification code. Please try again."
+          : "Failed to resend verification code. Please try again.",
       );
       setIsResending(false);
     }
@@ -98,7 +96,7 @@ export default function EmailVerificationPage({
           Verify Your Email
         </h1>
         <p className="text-center text-gray-600 mb-6">
-          We've sent a verification code to {email}. Please enter the code below
+          We've sent a verification code to email. Please enter the code below
           to verify your email address.
         </p>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -136,8 +134,8 @@ export default function EmailVerificationPage({
             {countdown > 0
               ? `Resend code in ${countdown}s`
               : isResending
-              ? "Resending..."
-              : "Resend verification code"}
+                ? "Resending..."
+                : "Resend verification code"}
           </Button>
         </div>
       </Card>
