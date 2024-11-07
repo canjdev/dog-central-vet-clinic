@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -10,24 +10,12 @@ import LoginPage from "./components/LoginPage";
 import { PetMedicalHistory } from "./components/PetMedicalHistory";
 import { AdminDashboard, type UserRole } from "./components/AdminDashboard";
 import EmailVerificationPage from "./components/EmailVerificationPage";
-import LoadingScreen from "./components/LoadingScreen";
+import PrivateRoute from "./routes/PrivateRoute";
 
 function App() {
-  const [isLoading, setIsLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string>("");
   const [userRole, setUserRole] = useState<UserRole>("staff");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    // Simulate an API call or any initialization process
-    const initializeApp = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 seconds delay
-      // Here you would typically check for an existing session or perform any necessary setup
-      setIsLoading(false);
-    };
-
-    initializeApp();
-  }, []);
 
   const handleLogin = (user: {
     username: string;
@@ -46,10 +34,6 @@ function App() {
     // You might want to update the user's verification status here
   };
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
   return (
     <Router>
       <Routes>
@@ -65,19 +49,21 @@ function App() {
             )
           }
         />
-        <Route
-          path="/dashboard"
-          element={
-            isAuthenticated ? (
-              <AdminDashboard
-                userRole={userRole}
-                onLogout={() => setIsAuthenticated(false)}
-              />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
+        <Route element={<PrivateRoute />}>
+          <Route
+            path="/dashboard"
+            element={
+              isAuthenticated ? (
+                <AdminDashboard
+                  userRole={userRole}
+                  onLogout={() => setIsAuthenticated(false)}
+                />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+        </Route>
         <Route
           path="/verify-email"
           element={

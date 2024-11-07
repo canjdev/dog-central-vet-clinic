@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { useAuth } from "@/context/AuthContext";
 
 type UserRole = "customer" | "staff" | "veterinarian" | "admin";
 
@@ -30,25 +31,16 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  console.log("HELLO WORLD");
+  const { login, isAuthenticated } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    const user = users.find(
-      (u) => u.username === username && u.password === password,
-    );
+    login({ username, password });
 
-    if (user) {
-      onLogin({ username: user.username, role: user.role });
-      if (user.role === "customer") {
-        navigate("/");
-      } else {
-        navigate("/dashboard");
-      }
-    } else {
-      setError("Invalid username or password");
+    if (isAuthenticated) {
+      navigate("/dashboard");
     }
   };
 
