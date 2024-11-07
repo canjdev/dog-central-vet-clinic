@@ -8,25 +8,25 @@ import {
 import VetClinicLanding from "./components/VetClinicLanding";
 import LoginPage from "./components/LoginPage";
 import { PetMedicalHistory } from "./components/PetMedicalHistory";
-import { AdminDashboard, type UserRole } from "./components/AdminDashboard";
+import { AdminDashboard } from "./components/AdminDashboard";
 import EmailVerificationPage from "./components/EmailVerificationPage";
 import PrivateRoute from "./routes/PrivateRoute";
 
 function App() {
-  const [userEmail, setUserEmail] = useState<string>("");
-  const [userRole, setUserRole] = useState<UserRole>("staff");
+  // const [userEmail, setUserEmail] = useState<string>("");
+  // const [userRole, setUserRole] = useState<UserRole>("staff");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const handleLogin = (user: {
-    username: string;
-    role: UserRole;
-    email?: string;
-  }) => {
-    setUserEmail(user.email || "");
-    setUserRole(user.role);
-    setIsAuthenticated(true);
-    // You might want to store the user info in a more global state management solution
-  };
+  // const handleLogin = (user: {
+  //   username: string;
+  //   role: UserRole;
+  //   email?: string;
+  // }) => {
+  //   setUserEmail(user.email || "");
+  //   setUserRole(user.role);
+  //   setIsAuthenticated(true);
+  //   // You might want to store the user info in a more global state management solution
+  // };
 
   const handleVerificationComplete = () => {
     // Handle verification completion, e.g., update user state
@@ -38,7 +38,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<VetClinicLanding />} />
-        <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route
           path="/medical-history"
           element={
@@ -55,7 +55,7 @@ function App() {
             element={
               isAuthenticated ? (
                 <AdminDashboard
-                  userRole={userRole}
+                  userRole={"admin"}
                   onLogout={() => setIsAuthenticated(false)}
                 />
               ) : (
@@ -68,7 +68,6 @@ function App() {
           path="/verify-email"
           element={
             <EmailVerificationPage
-              email={userEmail}
               onVerificationComplete={handleVerificationComplete}
             />
           }

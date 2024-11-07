@@ -5,27 +5,27 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 
-type UserRole = "customer" | "staff" | "veterinarian" | "admin";
+// type UserRole = "customer" | "staff" | "veterinarian" | "admin";
 
-interface User {
-  username: string;
-  password: string;
-  role: UserRole;
-  email?: string;
-}
+// interface User {
+//   username: string;
+//   password: string;
+//   role: UserRole;
+//   email?: string;
+// }
+//
+// const users: User[] = [
+//   { username: "customer1", password: "password1", role: "customer" },
+//   { username: "staff1", password: "password2", role: "staff" },
+//   { username: "vet1", password: "password3", role: "veterinarian" },
+//   { username: "admin1", password: "password4", role: "admin" },
+// ];
 
-const users: User[] = [
-  { username: "customer1", password: "password1", role: "customer" },
-  { username: "staff1", password: "password2", role: "staff" },
-  { username: "vet1", password: "password3", role: "veterinarian" },
-  { username: "admin1", password: "password4", role: "admin" },
-];
+// interface LoginPageProps {
+//   onLogin: (user: { username: string; role: UserRole }) => void;
+// }
 
-interface LoginPageProps {
-  onLogin: (user: { username: string; role: UserRole }) => void;
-}
-
-export default function LoginPage({ onLogin }: LoginPageProps) {
+export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
