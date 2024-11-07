@@ -28,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { services } from "@/utils/sharedUtils";
 
 export function AppointmentDialog({ trigger }: { trigger: React.ReactNode }) {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -78,10 +79,14 @@ export function AppointmentDialog({ trigger }: { trigger: React.ReactNode }) {
                     <SelectValue placeholder="Select service" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="checkup">General Checkup</SelectItem>
-                    <SelectItem value="vaccination">Vaccination</SelectItem>
-                    <SelectItem value="grooming">Grooming</SelectItem>
-                    <SelectItem value="dental">Dental Cleaning</SelectItem>
+                    {services.map((service, index) => (
+                      <SelectItem
+                        key={index}
+                        value={service.name.toLowerCase().replace(/\s+/g, "-")}
+                      >
+                        {service.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

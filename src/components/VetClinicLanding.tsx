@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/carousel";
 import { Quote } from "lucide-react";
 import { AppointmentDialog } from "@/components/AppointmentDialog";
+import { ClinicLocations } from "@/components/ClinicLocations";
 
 type UserRole = "customer" | "staff" | "veterinarian" | "admin";
 
@@ -219,16 +220,13 @@ export default function VetClinicLanding() {
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary">
             Our Services
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {services.map((service, index) => (
               <div
                 key={index}
                 className="flex flex-col items-center text-center"
               >
-                <div
-                  className="relative group cursor-pointer"
-                  onClick={() => navigate("/appointment")}
-                >
+                <div className="relative group cursor-pointer">
                   <div className="w-48 h-48 rounded-full overflow-hidden mb-6 border-4 border-secondary transition-transform transform group-hover:scale-105">
                     <img
                       src={service.image}
@@ -412,6 +410,25 @@ export default function VetClinicLanding() {
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
+          </div>
+        </div>
+      </section>
+      <section
+        id="locations"
+        className="w-full py-12 md:py-24 lg:py-32 bg-background"
+      >
+        <div className="container px-4 md:px-6">
+          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary">
+            Our Locations
+          </h2>
+          <ClinicLocations />
+          <div className="mt-8 space-y-4">
+            <h3 className="text-xl font-semibold">Branch Addresses:</h3>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>55W6+CPH, Chipeco Ave, Calamba, 4027 Laguna</li>
+              <li>225 San Juan Rd, Calamba, 4027 Laguna</li>
+              <li>Calamba, 4027 Laguna</li>
+            </ul>
           </div>
         </div>
       </section>

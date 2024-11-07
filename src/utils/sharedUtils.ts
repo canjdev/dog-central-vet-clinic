@@ -33,25 +33,54 @@ export interface Patient {
 // Export the data
 export const services: Service[] = [
   {
-    name: "Surgery",
-    description:
-      "Our veterinarians can perform orthopedic and soft tissue surgeries your pet may require.",
-    image:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/surgery-zWMhbQVXBXTBXDDXvAkwwxVFEXtBZg.jpg",
-  },
-  {
-    name: "24 Hour Care",
-    description:
-      "Continuous care at our vet clinic means constant attention for your pet's health, day or night.",
-    image:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/24hourcare-Zy0Ue7q9lCBXzkvppgQZQBXbcEMqZQ.jpg",
+    name: "Check Up",
+    image: "/placeholder.svg?height=100&width=100",
+    description: "Regular health examinations for your pet",
   },
   {
     name: "Vaccination",
-    description:
-      "Quick, safe vaccinations available at your convenience, protecting your pet's health with ease.",
-    image:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/vaccination-sPXXXXXXXXXXXXXXXXXXXXXXXXXXXX.jpg",
+    image: "/placeholder.svg?height=100&width=100",
+    description: "Protect your pet from various diseases",
+  },
+  {
+    name: "Pet Grooming",
+    image: "/placeholder.svg?height=100&width=100",
+    description: "Keep your pet clean and healthy",
+  },
+  {
+    name: "Confinement",
+    image: "/placeholder.svg?height=100&width=100",
+    description: "Short-term medical care and observation",
+  },
+  {
+    name: "Dental Cleaning",
+    image: "/placeholder.svg?height=100&width=100",
+    description: "Maintain your pet's oral health",
+  },
+  {
+    name: "Laboratory",
+    image: "/placeholder.svg?height=100&width=100",
+    description: "Comprehensive diagnostic testing",
+  },
+  {
+    name: "Pet Boarding",
+    image: "/placeholder.svg?height=100&width=100",
+    description: "Safe and comfortable lodging for your pet",
+  },
+  {
+    name: "Surgery",
+    image: "/placeholder.svg?height=100&width=100",
+    description: "Various surgical procedures for your pet",
+  },
+  {
+    name: "Ultrasound",
+    image: "/placeholder.svg?height=100&width=100",
+    description: "Non-invasive imaging for diagnosis",
+  },
+  {
+    name: "Laser Therapy",
+    image: "/placeholder.svg?height=100&width=100",
+    description: "Advanced treatment for pain and inflammation",
   },
 ];
 
