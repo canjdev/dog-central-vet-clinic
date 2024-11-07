@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
+import api from "@/config/api";
 
 // type UserRole = "customer" | "staff" | "veterinarian" | "admin";
 
@@ -31,15 +32,21 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const { login, isAuthenticated } = useAuth();
+  const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    login({ username, password });
+    const response = await api.post<{ isAuthenticated: boolean }>(
+      "/api/auth/",
+      { username, password },
+    );
 
-    if (isAuthenticated) {
+    console.log(response);
+
+    if (response.status === 200) {
+      login();
       navigate("/dashboard");
     }
   };
