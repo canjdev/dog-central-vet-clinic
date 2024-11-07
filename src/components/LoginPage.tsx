@@ -30,12 +30,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  console.log("HELLO WORLD");
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     const user = users.find(
-      (u) => u.username === username && u.password === password
+      (u) => u.username === username && u.password === password,
     );
 
     if (user) {
