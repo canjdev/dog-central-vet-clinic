@@ -8,11 +8,6 @@ import {
   useState,
 } from "react";
 
-type CredentialsType = {
-  username: string;
-  password: string;
-};
-
 type User = {
   id: string;
   username: string;
@@ -26,35 +21,33 @@ type User = {
 type AuthContextType = {
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: CredentialsType) => void;
+  login: (user?: User) => void;
   logout: () => void;
-  user: User | null;
+  user: User | undefined;
 };
 
 export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: false,
-  login: async () => {},
-  logout: async () => {},
-  user: null,
+  login: async () => { },
+  logout: async () => { },
+  user: undefined,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | undefined>(undefined);
 
   useEffect(() => {
     const checkAuthStatus = async () => {
       setIsLoading(true);
       try {
         const response = await api.get<{ isAuthenticated: boolean }>(
-          "/api/auth/status",
+          "/api/auth/status/",
         );
 
-        if (response?.data.isAuthenticated) {
-          setIsAuthenticated(true);
-        }
+        setIsAuthenticated(response?.data?.isAuthenticated);
       } catch (error) {
         console.log(error);
       } finally {
@@ -65,27 +58,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     checkAuthStatus();
   }, []);
 
-  const login = async ({
-    username,
-    password,
-  }: {
-    username: string;
-    password: string;
-  }) => {
-    try {
-      const response = await api.post<User>("/api/auth/", {
-        username,
-        password,
-      });
-
-      if (response.status === 200) {
-        setUser(response.data);
-        setIsAuthenticated(true);
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.log(error?.response?.data.message);
-    }
+  const login = (user?: User) => {
+    setUser(user);
+    setIsAuthenticated(true);
   };
   const logout = async () => {
     await api.post("/api/auth/logout");
@@ -96,7 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{ isAuthenticated, isLoading, login, logout, user }}
     >
-      {children}
+      {isLoading ? <div>loading...</div> : children}
     </AuthContext.Provider>
   );
 };

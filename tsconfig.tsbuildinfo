@@ -37,5 +37,6 @@
     "./src/routes/PrivateRoute.tsx",
     "./src/utils/sharedUtils.ts"
   ],
+  "errors": true,
   "version": "5.6.3"
 }
