@@ -10,9 +10,9 @@ interface User {
   username: string;
   password: string;
   role: UserRole;
+  email?: string;
 }
 
-// This is a mock user database. In a real application, this would be replaced with an API call to your backend.
 const users: User[] = [
   { username: "customer1", password: "password1", role: "customer" },
   { username: "staff1", password: "password2", role: "staff" },
