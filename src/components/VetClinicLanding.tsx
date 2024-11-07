@@ -186,11 +186,12 @@ export default function VetClinicLanding() {
           <div className="flex flex-col items-center space-y-4 text-center">
             <div className="space-y-2">
               <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none text-secondary-foreground">
-                Welcome to Dog Central Clinic
+                Welcome to Dog Central Clinic & Grooming
               </h1>
               <p className="mx-auto max-w-[700px] text-secondary-foreground/80 md:text-xl">
-                Providing compassionate care for your furry friends. Your pets
-                deserve the best, and we're here to deliver it.
+                We aim high to be the most trusted and respected pet care
+                provider. Your best choice in veterinary services and grooming
+                in the city!
               </p>
             </div>
             <div className="space-x-4">
@@ -422,14 +423,6 @@ export default function VetClinicLanding() {
             Our Locations
           </h2>
           <ClinicLocations />
-          <div className="mt-8 space-y-4">
-            <h3 className="text-xl font-semibold">Branch Addresses:</h3>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>55W6+CPH, Chipeco Ave, Calamba, 4027 Laguna</li>
-              <li>225 San Juan Rd, Calamba, 4027 Laguna</li>
-              <li>Calamba, 4027 Laguna</li>
-            </ul>
-          </div>
         </div>
       </section>
     </>
@@ -536,10 +529,10 @@ export default function VetClinicLanding() {
               Dog Central Clinic
             </h3>
             <p className="text-sm text-secondary-foreground/80">
-              123 Pet Street, Animalville, AV 12345
+              dogcentralvet@gmail.com
             </p>
             <p className="text-sm text-secondary-foreground/80">
-              Phone: (555) 123-4567
+              Phone: 0932 849 5981
             </p>
           </div>
           <div className="flex space-x-4">

@@ -86,26 +86,15 @@ export const services: Service[] = [
 
 export const vets: Vet[] = [
   {
-    name: "Dr. Sarah Johnson",
-    image: "/placeholder.svg?height=200&width=200",
+    name: "Dr. Jocelyn G. Ignacio",
+    image: "https://i.ibb.co/6ypbjh6/vet1.png",
     role: "Lead Veterinarian",
     schedule: [
       { day: "Mon-Fri", hours: "9:00 AM - 5:00 PM" },
-      { day: "Sat", hours: "10:00 AM - 2:00 PM" },
+      { day: "Sat", hours: "09:00 AM - 4:30 PM" },
     ],
     quote:
-      "Every pet deserves the highest quality of care. That's our promise to you and your furry family members.",
-  },
-  {
-    name: "Dr. Michael Lee",
-    image: "/placeholder.svg?height=200&width=200",
-    role: "Veterinary Surgeon",
-    schedule: [
-      { day: "Mon-Thu", hours: "8:00 AM - 4:00 PM" },
-      { day: "Fri", hours: "8:00 AM - 12:00 PM" },
-    ],
-    quote:
-      "Surgical excellence and compassionate care are the cornerstones of our practice.",
+      "Preventive Medicine has always been the backbone of my practice. I firmly believe that we can lengthen the lives of our pets and prevent serious illness if we rigorously follow the schedule set by a trusted veterinarian. We at Dog Central Veterinary Clinic and Grooming assure you the highest standard be given to your pets in ensuring their health and wellness",
   },
 ];
 
