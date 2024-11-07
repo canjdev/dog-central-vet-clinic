@@ -53,14 +53,10 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              isAuthenticated ? (
-                <AdminDashboard
-                  userRole={"admin"}
-                  onLogout={() => setIsAuthenticated(false)}
-                />
-              ) : (
-                <Navigate to="/login" replace />
-              )
+              <AdminDashboard
+                userRole={"admin"}
+                onLogout={() => setIsAuthenticated(false)}
+              />
             }
           />
         </Route>
