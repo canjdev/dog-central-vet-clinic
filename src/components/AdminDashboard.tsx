@@ -136,6 +136,7 @@ interface Notification {
   message: string;
   time: string;
   read: boolean;
+  ownerName: string;
 }
 
 export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
@@ -363,6 +364,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
       message: "You have a new appointment request",
       time: "5 min ago",
       read: false,
+      ownerName: "Christian Angelo Juan",
     },
     {
       id: 2,
@@ -370,6 +372,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
       message: "Don't forget to administer Max's medication",
       time: "1 hour ago",
       read: false,
+      ownerName: "Jefferson Garcia",
     },
     {
       id: 3,
@@ -377,6 +380,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
       message: "The system will undergo maintenance tonight",
       time: "2 hours ago",
       read: true,
+      ownerName: "System",
     },
   ]);
 
@@ -424,7 +428,14 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
       )
     );
   };
-
+  const addNotification = (
+    newNotification: Omit<Notification, "id" | "read">
+  ) => {
+    setNotifications([
+      ...notifications,
+      { ...newNotification, id: notifications.length + 1, read: false },
+    ]);
+  };
   const deleteNotification = (id: number) => {
     setNotifications(
       notifications.filter((notification) => notification.id !== id)
@@ -1148,8 +1159,79 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
 
               <TabsContent value="notifications">
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle>Notifications</CardTitle>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Notification
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add New Notification</DialogTitle>
+                        </DialogHeader>
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.currentTarget);
+                            addNotification({
+                              title: formData.get("title") as string,
+                              ownerName: formData.get("ownerName") as string, // Add this line
+                              message: formData.get("message") as string,
+                              time: "Just now",
+                            });
+                            e.currentTarget.reset();
+                          }}
+                          className="space-y-4"
+                        >
+                          <div>
+                            <label
+                              htmlFor="title"
+                              className="block text-sm font-medium"
+                            >
+                              Title
+                            </label>
+                            <Input
+                              id="title"
+                              name="title"
+                              placeholder="Enter notification title"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="ownerName"
+                              className="block text-sm font-medium"
+                            >
+                              Owner Name
+                            </label>
+                            <Input
+                              id="ownerName"
+                              name="ownerName"
+                              placeholder="Enter owner name"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="message"
+                              className="block text-sm font-medium"
+                            >
+                              Message
+                            </label>
+                            <Input
+                              id="message"
+                              name="message"
+                              placeholder="Enter notification message"
+                              required
+                            />
+                          </div>
+                          <Button type="submit">Add Notification</Button>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -1161,9 +1243,14 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-medium">
-                              {notification.title}
-                            </span>
+                            <div>
+                              <span className="font-medium">
+                                {notification.title}
+                              </span>
+                              <p className="text-sm text-muted-foreground">
+                                Owner: {notification.ownerName}
+                              </p>
+                            </div>
                             <Button
                               variant="ghost"
                               size="icon"

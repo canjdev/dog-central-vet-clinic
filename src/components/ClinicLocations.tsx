@@ -1,4 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 
 const locations = [
   {
@@ -36,7 +37,7 @@ export function ClinicLocations() {
       </TabsList>
       {locations.map((location) => (
         <TabsContent key={location.name} value={location.name}>
-          <div className="w-full aspect-video">
+          <div className="w-full aspect-video mb-4">
             <iframe
               src={location.iframe}
               width="100%"
@@ -47,7 +48,13 @@ export function ClinicLocations() {
               referrerPolicy="no-referrer-when-downgrade"
             ></iframe>
           </div>
-          <p className="mt-4 text-lg">{location.address}</p>
+          <div className="flex justify-center">
+            <Card className="w-full max-w-2xl">
+              <CardContent className="p-4">
+                <p className="text-lg text-center">{location.address}</p>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       ))}
     </Tabs>
