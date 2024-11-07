@@ -41,7 +41,7 @@ export default function VetClinicLanding() {
   const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState("home");
   const navigate = useNavigate();
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [isScrolled] = useState(false);
   const location = useLocation();
 
   const nextPatient = useCallback(() => {
