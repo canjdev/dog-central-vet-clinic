@@ -41,6 +41,7 @@ export default function VetClinicLanding() {
   const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState("home");
   const navigate = useNavigate();
+  const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
 
   const nextPatient = useCallback(() => {
@@ -67,6 +68,15 @@ export default function VetClinicLanding() {
       setActiveTab("admin-dashboard");
     }
   }, [location]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const handleLogin = (user: User) => {
     setLoggedInUser(user);
@@ -181,14 +191,26 @@ export default function VetClinicLanding() {
 
   const renderHomeContent = () => (
     <>
-      <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-secondary">
-        <div className="container px-4 md:px-6">
+      <section
+        className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-cover bg-center relative"
+        style={{
+          backgroundImage: `url('https://i.ibb.co/DQ0T6Rw/coverpage.jpg')`,
+        }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundColor: "#F35709",
+            opacity: 0.2,
+          }}
+        ></div>
+        <div className="container px-4 md:px-6 relative z-10">
           <div className="flex flex-col items-center space-y-4 text-center">
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none text-secondary-foreground">
+              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none text-white">
                 Welcome to Dog Central Clinic & Grooming
               </h1>
-              <p className="mx-auto max-w-[700px] text-secondary-foreground/80 md:text-xl">
+              <p className="mx-auto max-w-[700px] text-white md:text-xl">
                 We aim high to be the most trusted and respected pet care
                 provider. Your best choice in veterinary services and grooming
                 in the city!
@@ -197,14 +219,14 @@ export default function VetClinicLanding() {
             <div className="space-x-4">
               <AppointmentDialog
                 trigger={
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Button className="bg-white text-primary hover:bg-white/90">
                     Book Appointment
                   </Button>
                 }
               />
               <Button
                 variant="outline"
-                className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                className="bg-transparent text-white border-white hover:bg-white/20"
               >
                 Learn More
               </Button>
@@ -258,7 +280,7 @@ export default function VetClinicLanding() {
 
       <section
         id="vets"
-        className="w-full py-12 md:py-24 lg:py-32 bg-background"
+        className="w-full py-12 md:py-24 lg:py-32 bg-[url('https://i.ibb.co/ZLR7VvW/background.png')] bg-cover"
       >
         <div className="container px-4 md:px-6">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary">
@@ -337,6 +359,7 @@ export default function VetClinicLanding() {
                       <CardContent className="p-6">
                         <div className="flex flex-col items-center">
                           <Avatar className="w-24 h-24 mb-4">
+                            <AvatarImage src={helper.image} alt={helper.name} />
                             <AvatarFallback>
                               {helper.name
                                 .split(" ")
@@ -416,7 +439,7 @@ export default function VetClinicLanding() {
       </section>
       <section
         id="locations"
-        className="w-full py-12 md:py-24 lg:py-32 bg-background"
+        className="w-full py-12 md:py-24 lg:py-32 bg-[url('https://i.ibb.co/vvndnbZ/bglocation.png')]"
       >
         <div className="container px-4 md:px-6">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-center mb-12 text-primary">
@@ -463,22 +486,32 @@ export default function VetClinicLanding() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header
+        className={`sticky top-0 z-50 w-full border-b transition-colors duration-300 ${
+          isScrolled ? "bg-white" : "bg-[#F35709]"
+        }`}
+      >
         <div className="container flex h-14 items-center">
           <div className="mr-4 hidden md:flex">
             <a className="mr-6 flex items-center space-x-2" href="/">
               <img
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image%2020-H2WL8rPLJfpqcOkz3zhME4AbN8Gmaj.png"
+                src="https://i.ibb.co/30D8mSn/LOGOAGAIN.png"
                 alt="Dog Central Clinic Logo"
-                className="h-8 w-auto"
+                className="h-20 w-auto"
               />
             </a>
-            <nav className="flex items-center space-x-6 text-sm font-medium">
+            <nav
+              className={`flex items-center space-x-6 text-sm font-medium ${
+                isScrolled ? "text-gray-700" : "text-white"
+              }`}
+            >
               {renderNavigation()}
             </nav>
           </div>
           <Button
-            className="inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:text-accent-foreground h-9 py-2 mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
+            className={`inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:text-accent-foreground h-9 py-2 mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden ${
+              isScrolled ? "text-gray-700" : "text-white"
+            }`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             <Menu className="h-6 w-6" />
@@ -494,7 +527,13 @@ export default function VetClinicLanding() {
           <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
             {loggedInUser ? (
               <>
-                <span className="mr-2">Welcome, {loggedInUser.username}!</span>
+                <span
+                  className={`mr-2 ${
+                    isScrolled ? "text-gray-700" : "text-white"
+                  }`}
+                >
+                  Welcome, {loggedInUser.username}!
+                </span>
                 <Button
                   onClick={handleLogout}
                   className="bg-primary text-primary-foreground hover:bg-primary/90"

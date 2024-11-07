@@ -22,6 +22,7 @@ export interface Helper {
   name: string;
   role: string;
   quote: string;
+  image: string;
 }
 
 export interface Patient {
@@ -34,52 +35,52 @@ export interface Patient {
 export const services: Service[] = [
   {
     name: "Check Up",
-    image: "/placeholder.svg?height=100&width=100",
+    image: "https://i.ibb.co/fSKJVNs/checkup.png",
     description: "Regular health examinations for your pet",
   },
   {
     name: "Vaccination",
-    image: "/placeholder.svg?height=100&width=100",
+    image: "https://i.ibb.co/pjD8qtx/vaccination.png",
     description: "Protect your pet from various diseases",
   },
   {
     name: "Pet Grooming",
-    image: "/placeholder.svg?height=100&width=100",
+    image: "https://i.ibb.co/qRwp3nN/petgrooming.png",
     description: "Keep your pet clean and healthy",
   },
   {
     name: "Confinement",
-    image: "/placeholder.svg?height=100&width=100",
+    image: "https://i.ibb.co/VxkLYX0/confinement.png",
     description: "Short-term medical care and observation",
   },
   {
     name: "Dental Cleaning",
-    image: "/placeholder.svg?height=100&width=100",
+    image: "https://i.ibb.co/VxwWJ1m/dental.png",
     description: "Maintain your pet's oral health",
   },
   {
     name: "Laboratory",
-    image: "/placeholder.svg?height=100&width=100",
+    image: "https://i.ibb.co/wWn4B4D/laboratory.png",
     description: "Comprehensive diagnostic testing",
   },
   {
     name: "Pet Boarding",
-    image: "/placeholder.svg?height=100&width=100",
+    image: "https://i.ibb.co/mJvR7rm/petboarding.png",
     description: "Safe and comfortable lodging for your pet",
   },
   {
     name: "Surgery",
-    image: "/placeholder.svg?height=100&width=100",
+    image: "https://i.ibb.co/b7g83Hk/surgery.png",
     description: "Various surgical procedures for your pet",
   },
   {
     name: "Ultrasound",
-    image: "/placeholder.svg?height=100&width=100",
+    image: "https://i.ibb.co/X3Fn3rg/ultrasound.png",
     description: "Non-invasive imaging for diagnosis",
   },
   {
     name: "Laser Therapy",
-    image: "/placeholder.svg?height=100&width=100",
+    image: "https://i.ibb.co/5hnVXLc/laser.png",
     description: "Advanced treatment for pain and inflammation",
   },
 ];
@@ -100,22 +101,31 @@ export const vets: Vet[] = [
 
 export const helpers: Helper[] = [
   {
-    name: "Emily Brown",
+    name: "Christian Angelo Juan",
     role: "Veterinary Technician",
     quote:
       "I'm passionate about ensuring every pet receives the best possible care and comfort.",
+    image: "https://i.ibb.co/hMpngGR/helper1.png",
   },
   {
-    name: "John Smith",
+    name: "Jefferson Garcia",
     role: "Veterinary Assistant",
     quote:
       "Working with animals is not just a job, it's a calling. I'm here to make a difference in their lives.",
+    image: "https://i.ibb.co/sbg3fkF/helper2.jpg",
   },
   {
-    name: "Lisa Chen",
+    name: "John Rovic Agor",
     role: "Groomer",
     quote:
       "A well-groomed pet is a happy pet. I love making our furry friends look and feel their best!",
+    image: "https://i.ibb.co/qgkb8HS/helper3.png",
+  },
+  {
+    name: "Marco Joemari Salazar",
+    role: "Surgeon",
+    quote: "All doctors treat, but a good doctor lets nature heal.",
+    image: "https://i.ibb.co/fXNk8cX/helper4.jpg",
   },
 ];
 
