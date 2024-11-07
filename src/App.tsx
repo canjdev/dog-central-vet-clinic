@@ -8,14 +8,14 @@ import {
 import VetClinicLanding from "./components/VetClinicLanding";
 import LoginPage from "./components/LoginPage";
 import { PetMedicalHistory } from "./components/PetMedicalHistory";
-import { AdminDashboard } from "./components/AdminDashboard";
+import { AdminDashboard, type UserRole } from "./components/AdminDashboard";
 import EmailVerificationPage from "./components/EmailVerificationPage";
 import LoadingScreen from "./components/LoadingScreen";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string>("");
-  const [userRole, setUserRole] = useState<string>("");
+  const [userRole, setUserRole] = useState<UserRole>("staff");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ function App() {
 
   const handleLogin = (user: {
     username: string;
-    role: string;
+    role: UserRole;
     email?: string;
   }) => {
     setUserEmail(user.email || "");
