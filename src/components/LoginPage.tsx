@@ -70,7 +70,6 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
@@ -86,7 +85,6 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
@@ -100,7 +98,7 @@ export default function LoginPage() {
 
           <Button className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
             <a
-              href="https://management-system-backend-theta.vercel.app/api/auth/google"
+              href="http://localhost:3000/api/auth/google"
               className="flex items-center gap-2"
             >
               <svg

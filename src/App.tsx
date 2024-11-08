@@ -39,16 +39,7 @@ function App() {
       <Routes>
         <Route path="/" element={<VetClinicLanding />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/medical-history"
-          element={
-            isAuthenticated ? (
-              <PetMedicalHistory />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
+        <Route path="/medical-history" element={<PetMedicalHistory />} />
         <Route element={<PrivateRoute />}>
           <Route
             path="/dashboard"
