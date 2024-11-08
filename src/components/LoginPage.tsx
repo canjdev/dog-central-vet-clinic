@@ -98,7 +98,7 @@ export default function LoginPage() {
 
           <Button className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
             <a
-              href="http://localhost:3000/api/auth/google"
+              href={`${import.meta.env.VITE_API_BASE_URL}/api/auth/google`}
               className="flex items-center gap-2"
             >
               <svg

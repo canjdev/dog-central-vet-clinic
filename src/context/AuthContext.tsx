@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
+import LoadingScreen from "@/components/LoadingScreen";
 import api from "@/config/api";
 import {
   createContext,
@@ -29,19 +30,18 @@ type AuthContextType = {
 export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: false,
-  login: async () => { },
-  logout: async () => { },
+  login: async () => {},
+  logout: async () => {},
   user: undefined,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | undefined>(undefined);
 
   useEffect(() => {
     const checkAuthStatus = async () => {
-      setIsLoading(true);
       try {
         const response = await api.get<{ isAuthenticated: boolean }>(
           "/api/auth/status/",
@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{ isAuthenticated, isLoading, login, logout, user }}
     >
-      {isLoading ? <div>loading...</div> : children}
+      {isLoading ? <LoadingScreen /> : children}
     </AuthContext.Provider>
   );
 };
