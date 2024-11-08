@@ -1,10 +1,5 @@
 import { useState } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import VetClinicLanding from "./components/VetClinicLanding";
 import LoginPage from "./components/LoginPage";
 import { PetMedicalHistory } from "./components/PetMedicalHistory";
@@ -16,6 +11,8 @@ function App() {
   // const [userEmail, setUserEmail] = useState<string>("");
   // const [userRole, setUserRole] = useState<UserRole>("staff");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  console.log(isAuthenticated);
 
   // const handleLogin = (user: {
   //   username: string;
