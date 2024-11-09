@@ -42,7 +42,7 @@ export default function VetClinicLanding() {
   const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState("home");
   const navigate = useNavigate();
-  const [isScrolled] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
 
   const nextPatient = useCallback(() => {
@@ -86,6 +86,15 @@ export default function VetClinicLanding() {
     setActiveTab("home");
     navigate("/");
   };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const renderNavigation = () => {
     if (!loggedInUser) {
@@ -479,11 +488,11 @@ export default function VetClinicLanding() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header
-        className={`sticky top-0 z-50 w-full border-b transition-colors duration-300 ${
-          isScrolled ? "bg-white" : "bg-[#F35709]"
+        className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${
+          isScrolled ? "bg-[#F35709]/80 backdrop-blur-md" : "bg-[#F35709]"
         }`}
       >
-        <div className="container flex h-14 items-center">
+        <div className="container flex h-16 items-center">
           <div className="mr-4 hidden md:flex">
             <a className="mr-6 flex items-center space-x-2" href="/">
               <img
@@ -492,25 +501,19 @@ export default function VetClinicLanding() {
                 className="h-20 w-auto"
               />
             </a>
-            <nav
-              className={`flex items-center space-x-6 text-sm font-medium ${
-                isScrolled ? "text-gray-700" : "text-white"
-              }`}
-            >
+            <nav className="flex items-center space-x-6 text-sm font-medium text-white">
               {renderNavigation()}
             </nav>
           </div>
           <Button
-            className={`inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:text-accent-foreground h-9 py-2 mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden ${
-              isScrolled ? "text-gray-700" : "text-white"
-            }`}
+            className="inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:text-accent-foreground h-9 py-2 mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden text-white"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             <Menu className="h-6 w-6" />
             <span className="sr-only">Toggle Menu</span>
           </Button>
           {mobileMenuOpen && (
-            <div className="absolute top-full left-0 right-0 bg-background border-b md:hidden">
+            <div className="absolute top-full left-0 right-0 bg-[#F35709] border-b md:hidden">
               <nav className="flex flex-col space-y-2 p-4">
                 {renderNavigation()}
               </nav>
@@ -519,16 +522,12 @@ export default function VetClinicLanding() {
           <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
             {loggedInUser ? (
               <>
-                <span
-                  className={`mr-2 ${
-                    isScrolled ? "text-gray-700" : "text-white"
-                  }`}
-                >
+                <span className="mr-2 text-white">
                   Welcome, {loggedInUser.username}!
                 </span>
                 <Button
                   onClick={handleLogout}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="bg-white text-[#F35709] hover:bg-white/90"
                 >
                   Logout
                 </Button>
@@ -536,14 +535,14 @@ export default function VetClinicLanding() {
             ) : (
               <Button
                 onClick={() => navigate("/login")}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                className="bg-white text-[#F35709] hover:bg-white/90"
               >
                 Login
               </Button>
             )}
             <Button
               onClick={() => setIsChatOpen(true)}
-              className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+              className="bg-white text-[#F35709] hover:bg-white/90"
             >
               <MessageCircle className="mr-2 h-4 w-4" /> Chat with Us
             </Button>
