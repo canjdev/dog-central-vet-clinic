@@ -48,6 +48,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import api from "@/config/api";
 
 export type UserRole = "customer" | "staff" | "veterinarian" | "admin";
 
@@ -139,7 +140,7 @@ interface Notification {
   ownerName: string;
 }
 
-export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
+export function AdminDashboard({ userRole }: AdminDashboardProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -416,9 +417,11 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
     }
   };
 
-  const handleLogout = () => {
-    onLogout();
-    navigate("/");
+  const handleLogout = async () => {
+    const response = await api.post("/api/auth/logout");
+    if (response.status === 204) {
+      navigate("/");
+    }
   };
 
   const markNotificationAsRead = (id: number) => {
@@ -501,11 +504,7 @@ export function AdminDashboard({ userRole, onLogout }: AdminDashboardProps) {
               </Button>
             ))}
           </nav>
-          <div className="absolute bottom-4 left-4 right-4">
-            <Button variant="outline" className="w-full" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" /> Logout
-            </Button>
-          </div>
+          <div className="absolute bottom-4 left-4 right-4"></div>
         </div>
 
         {/* Main content */}
