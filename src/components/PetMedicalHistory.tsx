@@ -140,7 +140,7 @@ export function PetMedicalHistory() {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>Treatment</TableHead>
+                <TableHead>Service</TableHead>
                 <TableHead>Veterinarian</TableHead>
                 <TableHead>Notes</TableHead>
               </TableRow>

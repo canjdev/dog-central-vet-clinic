@@ -18,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,14 +48,14 @@ export function AppointmentDialog({ trigger }: { trigger: React.ReactNode }) {
           <DialogHeader>
             <DialogTitle>Book an Appointment</DialogTitle>
             <DialogDescription>
-              Fill out the form below to schedule your pet's visit to Dog
-              Central Clinic.
+              Fill out the form below to schedule your pet&apos;s visit to Dog
+              Central Veterinary Clinic.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="pet-name">Pet's Name</Label>
+                <Label htmlFor="pet-name">Pet&apos;s Name</Label>
                 <Input id="pet-name" placeholder="Enter pet's name" required />
               </div>
               <div className="grid gap-2">
@@ -66,9 +65,26 @@ export function AppointmentDialog({ trigger }: { trigger: React.ReactNode }) {
                     <SelectValue placeholder="Select pet type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="dog">Dog</SelectItem>
                     <SelectItem value="cat">Cat</SelectItem>
+                    <SelectItem value="dog">Dog</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="breed">Breed</Label>
+                <Input id="breed" placeholder="Enter pet's breed" required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="gender">Gender</Label>
+                <Select required>
+                  <SelectTrigger id="gender">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="neutered">Neutered</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -107,44 +123,15 @@ export function AppointmentDialog({ trigger }: { trigger: React.ReactNode }) {
                     <SelectValue placeholder="Select time" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="9">9:00 AM</SelectItem>
-                    <SelectItem value="10">10:00 AM</SelectItem>
-                    <SelectItem value="11">11:00 AM</SelectItem>
-                    <SelectItem value="14">2:00 PM</SelectItem>
-                    <SelectItem value="15">3:00 PM</SelectItem>
-                    <SelectItem value="16">4:00 PM</SelectItem>
+                    <SelectItem value="9">9:00 AM - 10:00 AM</SelectItem>
+                    <SelectItem value="10">10:00 AM - 11:00 AM</SelectItem>
+                    <SelectItem value="11">11:00 AM - 12:00 NN</SelectItem>
+                    <SelectItem value="14">12:00 NN - 1:00 PM</SelectItem>
+                    <SelectItem value="15">1:00 PM - 2:00 PM</SelectItem>
+                    <SelectItem value="16">2:00 PM - 3:00 PM</SelectItem>
+                    <SelectItem value="17">3:00 PM - 4:00 PM</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="owner-name">Owner's Name</Label>
-                <Input id="owner-name" placeholder="Enter your name" required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="Enter phone number"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="notes">Additional Notes</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Any special requirements or concerns?"
-                  className="h-[100px]"
-                />
               </div>
               <Button className="w-full mt-2" type="submit">
                 Schedule Appointment

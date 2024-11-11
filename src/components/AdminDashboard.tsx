@@ -65,19 +65,26 @@ interface Appointment {
 }
 
 interface Owner {
-  id: number;
-  name: string;
-  pets: string[];
-  phone: string;
+  id: string;
+  profilePicture: string | null;
+  firstName: string | null;
+  middleName: string | null;
+  lastName: string | null;
+  createdAt: Date;
+  contact: string;
 }
 
 interface Pet {
-  id: number;
+  id: string;
   name: string;
   type: string;
-  breed: string;
+  breed: string | null;
+  bio: string;
+  gender: string | null;
   owner: string;
-  age: number;
+  profile: string | null;
+  ownerid: string;
+  created_at: string;
 }
 
 interface Message {
@@ -185,56 +192,63 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
     },
   ]);
 
-  const [owners, setOwners] = useState<Owner[]>([
-    {
-      id: 1,
-      name: "John Doe",
-      pets: ["Max (Dog)", "Whiskers (Cat)"],
-      phone: "123-456-7890",
-    },
-    { id: 2, name: "Jane Smith", pets: ["Buddy (Dog)"], phone: "098-765-4321" },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      pets: ["Fluffy (Cat)", "Tweety (Bird)"],
-      phone: "555-123-4567",
-    },
-  ]);
+  const [owners, setOwners] = useState<Owner[]>([]);
 
-  const [pets, setPets] = useState<Pet[]>([
-    {
-      id: 1,
-      name: "Max",
-      type: "Dog",
-      breed: "Golden Retriever",
-      owner: "John Doe",
-      age: 5,
-    },
-    {
-      id: 2,
-      name: "Whiskers",
-      type: "Cat",
-      breed: "Siamese",
-      owner: "John Doe",
-      age: 3,
-    },
-    {
-      id: 3,
-      name: "Buddy",
-      type: "Dog",
-      breed: "Labrador",
-      owner: "Jane Smith",
-      age: 2,
-    },
-    {
-      id: 4,
-      name: "Fluffy",
-      type: "Cat",
-      breed: "Persian",
-      owner: "Mike Johnson",
-      age: 4,
-    },
-  ]);
+  useEffect(() => {
+    const fetchOwner = async () => {
+      try {
+        const response = await api.get<Owner[]>("/api/profiles");
+        setOwners(response.data);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    fetchOwner();
+  }, []);
+
+  const deleteOwner = async (ownerId: string) => {
+    try {
+      await api.delete(`/api/profiles/${ownerId}`);
+      // fetchOwner(); // Refresh the list of owners
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [totalPets, setTotalPets] = useState(0);
+  const [newPetsCount, setNewPetsCount] = useState(0);
+
+  useEffect(() => {
+    const fetchPets = async () => {
+      try {
+        const response = await api.get<Pet[]>("/api/pets");
+        setPets(response.data);
+        setTotalPets(response.data.length);
+        const lastHour = new Date(Date.now() - 60 * 60 * 1000); // 1 hour in milliseconds
+        const recentPets = response.data.filter((pet) => {
+          const petCreatedAt = new Date(pet.created_at);
+          return petCreatedAt > lastHour;
+        });
+        setNewPetsCount(recentPets.length);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    fetchPets();
+    const interval = setInterval(fetchPets, 60000);
+  }, []);
+
+  const deletePets = async (petId: string) => {
+    try {
+      await api.delete(`/api/pets/${petId}`);
+      // fetchOwner(); // Refresh the list of owners
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   const [messages] = useState<Message[]>([
     {
@@ -679,9 +693,13 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                         <PawPrint className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold">{pets.length}</div>
+                        <div className="text-2xl font-bold">{totalPets}</div>
                         <p className="text-xs text-muted-foreground">
-                          +1 new pet registered
+                          {newPetsCount > 0
+                            ? `+${newPetsCount} new ${
+                                newPetsCount === 1 ? "pet" : "pets"
+                              } in the last hour`
+                            : "No new pets in the last hour"}
                         </p>
                       </CardContent>
                     </Card>
@@ -991,9 +1009,10 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                         <TableBody>
                           {owners.map((owner) => (
                             <TableRow key={owner.id}>
-                              <TableCell>{owner.name}</TableCell>
-                              <TableCell>{owner.pets.join(", ")}</TableCell>
-                              <TableCell>{owner.phone}</TableCell>
+                              <TableCell>{owner.firstName}</TableCell>
+                              <TableCell>{owner.middleName}</TableCell>
+                              <TableCell>{owner.lastName}</TableCell>
+                              <TableCell>{owner.contact}</TableCell>
                               <TableCell>
                                 <Button
                                   variant="ghost"
@@ -1005,13 +1024,7 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() =>
-                                    handleDeleteItem(
-                                      owners,
-                                      setOwners,
-                                      owner.id
-                                    )
-                                  }
+                                  onClick={() => deleteOwner(owner.id)}
                                 >
                                   <Trash className="h-4 w-4" />
                                 </Button>
@@ -1117,7 +1130,7 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                             <TableHead>Type</TableHead>
                             <TableHead>Breed</TableHead>
                             <TableHead>Owner</TableHead>
-                            <TableHead>Age</TableHead>
+                            <TableHead>Gender</TableHead>
                             <TableHead>Actions</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1128,7 +1141,7 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                               <TableCell>{pet.type}</TableCell>
                               <TableCell>{pet.breed}</TableCell>
                               <TableCell>{pet.owner}</TableCell>
-                              <TableCell>{pet.age}</TableCell>
+                              <TableCell>{pet.gender}</TableCell>
                               <TableCell>
                                 <Button
                                   variant="ghost"
@@ -1140,9 +1153,7 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() =>
-                                    handleDeleteItem(pets, setPets, pet.id)
-                                  }
+                                  onClick={() => deletePets(pet.id)}
                                 >
                                   <Trash className="h-4 w-4" />
                                 </Button>

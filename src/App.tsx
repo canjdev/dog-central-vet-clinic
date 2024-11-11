@@ -43,7 +43,7 @@ function App() {
             element={
               <AdminDashboard
                 userRole={"admin"}
-                onLogout={() => setIsAuthenticated(false)}
+                // onLogout={() => setIsAuthenticated(false)}
               />
             }
           />
