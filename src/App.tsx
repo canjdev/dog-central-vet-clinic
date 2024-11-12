@@ -1,61 +1,17 @@
-import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import VetClinicLanding from "./components/VetClinicLanding";
 import LoginPage from "./components/LoginPage";
 import { PetMedicalHistory } from "./components/PetMedicalHistory";
 import { AdminDashboard } from "./components/AdminDashboard";
-import EmailVerificationPage from "./components/EmailVerificationPage";
-import PrivateRoute from "./routes/PrivateRoute";
 
 function App() {
-  // const [userEmail, setUserEmail] = useState<string>("");
-  // const [userRole, setUserRole] = useState<UserRole>("staff");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  console.log(isAuthenticated);
-
-  // const handleLogin = (user: {
-  //   username: string;
-  //   role: UserRole;
-  //   email?: string;
-  // }) => {
-  //   setUserEmail(user.email || "");
-  //   setUserRole(user.role);
-  //   setIsAuthenticated(true);
-  //   // You might want to store the user info in a more global state management solution
-  // };
-
-  const handleVerificationComplete = () => {
-    // Handle verification completion, e.g., update user state
-    console.log("Email verification completed");
-    // You might want to update the user's verification status here
-  };
-
   return (
     <Router>
       <Routes>
         <Route path="/" element={<VetClinicLanding />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/medical-history" element={<PetMedicalHistory />} />
-        <Route element={<PrivateRoute />}>
-          <Route
-            path="/dashboard"
-            element={
-              <AdminDashboard
-                userRole={"admin"}
-                // onLogout={() => setIsAuthenticated(false)}
-              />
-            }
-          />
-        </Route>
-        <Route
-          path="/verify-email"
-          element={
-            <EmailVerificationPage
-              onVerificationComplete={handleVerificationComplete}
-            />
-          }
-        />
+        <Route path="/dashboard" element={<AdminDashboard />} />
       </Routes>
     </Router>
   );

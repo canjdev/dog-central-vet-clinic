@@ -474,12 +474,7 @@ export default function VetClinicLanding() {
       case "login":
         return <LoginPage />;
       case "admin-dashboard":
-        return loggedInUser ? (
-          <AdminDashboard
-            userRole={loggedInUser.role}
-            onLogout={handleLogout}
-          />
-        ) : null;
+        return loggedInUser ? <AdminDashboard /> : null;
       default:
         return null;
     }
