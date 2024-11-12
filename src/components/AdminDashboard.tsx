@@ -34,8 +34,8 @@ import {
   Plus,
   Edit,
   Trash,
-  FileText,
-  UserCog,
+  // FileText,
+  // UserCog,
   Send,
   Bell,
   Check,
@@ -50,34 +50,42 @@ import {
 } from "@/components/ui/table";
 import api from "@/config/api";
 
-export type UserRole = "customer" | "staff" | "veterinarian" | "admin";
-
-interface AdminDashboardProps {
-  userRole: UserRole;
-  onLogout: () => void;
-}
+// export type UserRole = "customer" | "staff" | "veterinarian" | "admin";
 
 interface Appointment {
-  id: number;
-  patientName: string;
+  id: string;
+  ownerId: string;
   date: string;
-  status: "confirmed" | "cancelled" | "completed";
+  time: string;
+  status: "confirmed" | "cancelled" | "completed" | "pending";
+  notes: string | null;
+  pet: Pet;
+  createdAt: string;
+  owner: Owner;
 }
 
 interface Owner {
-  id: number;
-  name: string;
-  pets: string[];
-  phone: string;
+  id: string;
+  profilePicture: string | null;
+  firstName: string | null;
+  middleName: string | null;
+  lastName: string | null;
+  createdAt: Date;
+  contact: string;
+  pets: Pet[];
 }
 
 interface Pet {
-  id: number;
+  id: string;
   name: string;
   type: string;
-  breed: string;
+  breed: string | null;
+  bio: string;
+  gender: string | null;
   owner: string;
-  age: number;
+  profile: string | null;
+  ownerid: string;
+  created_at: string;
 }
 
 interface Message {
@@ -140,101 +148,125 @@ interface Notification {
   ownerName: string;
 }
 
-export function AdminDashboard({ userRole }: AdminDashboardProps) {
+export function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    {
-      id: 1,
-      patientName: "Christian Angelo Juan",
-      date: "May 24, 1:00pm",
-      status: "confirmed",
-    },
-    {
-      id: 2,
-      patientName: "Jefferson Garcia",
-      date: "May 27, 2:30pm",
-      status: "cancelled",
-    },
-    {
-      id: 3,
-      patientName: "Marco Joemar Salazar",
-      date: "May 30, 10:00am",
-      status: "confirmed",
-    },
-    {
-      id: 4,
-      patientName: "John Rovic Agar",
-      date: "June 1, 3:00pm",
-      status: "confirmed",
-    },
-    {
-      id: 5,
-      patientName: "Jobby Mendoza",
-      date: "June 3, 11:00am",
-      status: "completed",
-    },
-  ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const [appointmentsResponse, ownersResponse] = await Promise.all([
+          api.get<Appointment[]>("/api/appointments"),
+          api.get<Owner[]>("/api/profiles"),
+        ]);
+        setAppointments(appointmentsResponse.data);
+        setOwners(ownersResponse.data);
+      } catch (err) {
+        console.error(err);
+        setError("An error occurred while fetching data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const [owners, setOwners] = useState<Owner[]>([
-    {
-      id: 1,
-      name: "John Doe",
-      pets: ["Max (Dog)", "Whiskers (Cat)"],
-      phone: "123-456-7890",
-    },
-    { id: 2, name: "Jane Smith", pets: ["Buddy (Dog)"], phone: "098-765-4321" },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      pets: ["Fluffy (Cat)", "Tweety (Bird)"],
-      phone: "555-123-4567",
-    },
-  ]);
+    fetchData();
+  }, []);
 
-  const [pets, setPets] = useState<Pet[]>([
-    {
-      id: 1,
-      name: "Max",
-      type: "Dog",
-      breed: "Golden Retriever",
-      owner: "John Doe",
-      age: 5,
-    },
-    {
-      id: 2,
-      name: "Whiskers",
-      type: "Cat",
-      breed: "Siamese",
-      owner: "John Doe",
-      age: 3,
-    },
-    {
-      id: 3,
-      name: "Buddy",
-      type: "Dog",
-      breed: "Labrador",
-      owner: "Jane Smith",
-      age: 2,
-    },
-    {
-      id: 4,
-      name: "Fluffy",
-      type: "Cat",
-      breed: "Persian",
-      owner: "Mike Johnson",
-      age: 4,
-    },
-  ]);
+  const handleDeleteAppointment = async (id: string) => {
+    try {
+      await api.delete(`/api/appointments/${id}`);
+      setAppointments(
+        appointments.filter((appointment) => appointment.id !== id)
+      );
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while deleting the appointment");
+    }
+  };
+
+  const handleAddAppointment = async (formData: FormData) => {
+    try {
+      const response = await api.post(
+        "/api/appointments",
+        Object.fromEntries(formData)
+      );
+      const newAppointment: Appointment = response.data;
+      setAppointments([...appointments, newAppointment]);
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while adding the appointment");
+    }
+  };
+
+  const [owners, setOwners] = useState<Owner[]>([]);
+
+  useEffect(() => {
+    const fetchOwner = async () => {
+      try {
+        const response = await api.get<Owner[]>("/api/profiles");
+        setOwners(response.data);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    fetchOwner();
+  }, []);
+
+  const deleteOwner = async (ownerId: string) => {
+    try {
+      await api.delete(`/api/profiles/${ownerId}`);
+      // fetchOwner(); // Refresh the list of owners
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [totalPets, setTotalPets] = useState(0);
+  const [newPetsCount, setNewPetsCount] = useState(0);
+
+  useEffect(() => {
+    const fetchPets = async () => {
+      try {
+        const response = await api.get<Pet[]>("/api/pets");
+        setPets(response.data);
+        setTotalPets(response.data.length);
+        const lastHour = new Date(Date.now() - 60 * 60 * 1000); // 1 hour in milliseconds
+        const recentPets = response.data.filter((pet) => {
+          const petCreatedAt = new Date(pet.created_at);
+          return petCreatedAt > lastHour;
+        });
+        setNewPetsCount(recentPets.length);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    fetchPets();
+  }, []);
+
+  const deletePets = async (petId: string) => {
+    try {
+      await api.delete(`/api/pets/${petId}`);
+      // fetchOwner(); // Refresh the list of owners
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   const [messages] = useState<Message[]>([
     {
@@ -456,13 +488,13 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
       { icon: ImageIcon, label: "Gallery" },
     ];
 
-    if (userRole === "veterinarian") {
-      return [...commonTabs, { icon: FileText, label: "Prescriptions" }];
-    }
+    // if (userRole === "veterinarian") {
+    //   return [...commonTabs, { icon: FileText, label: "Prescriptions" }];
+    // }
 
-    if (userRole === "admin") {
-      return [...commonTabs, { icon: UserCog, label: "User Management" }];
-    }
+    // if (userRole === "admin") {
+    //   return [...commonTabs, { icon: UserCog, label: "User Management" }];
+    // }
 
     return commonTabs;
   };
@@ -472,6 +504,21 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
   if (!mounted) {
     return null;
   }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      case "confirmed":
+        return "bg-blue-100 text-blue-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
@@ -679,9 +726,13 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                         <PawPrint className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold">{pets.length}</div>
+                        <div className="text-2xl font-bold">{totalPets}</div>
                         <p className="text-xs text-muted-foreground">
-                          +1 new pet registered
+                          {newPetsCount > 0
+                            ? `+${newPetsCount} new ${
+                                newPetsCount === 1 ? "pet" : "pets"
+                              } in the last hour`
+                            : "No new pets in the last hour"}
                         </p>
                       </CardContent>
                     </Card>
@@ -736,40 +787,49 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                         </Button>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-8">
-                          {appointments.slice(0, 5).map((appointment) => (
-                            <div
-                              key={appointment.id}
-                              className="flex items-center"
-                            >
-                              <Avatar className="h-9 w-9">
-                                <AvatarFallback>
-                                  {appointment.patientName.charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="ml-4 space-y-1">
-                                <p className="text-sm font-medium leading-none">
-                                  {appointment.patientName}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {appointment.date}
-                                </p>
-                              </div>
+                        {isLoading ? (
+                          <p>Loading appointments...</p>
+                        ) : error ? (
+                          <p className="text-red-500">{error}</p>
+                        ) : (
+                          <div className="space-y-8">
+                            {appointments.slice(0, 5).map((appointment) => (
                               <div
-                                className={`ml-auto inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                  appointment.status === "completed"
-                                    ? "bg-green-100 text-green-800"
-                                    : appointment.status === "cancelled"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-blue-100 text-blue-800"
-                                }`}
+                                key={appointment.id}
+                                className="flex items-center"
                               >
-                                {appointment.status.charAt(0).toUpperCase() +
-                                  appointment.status.slice(1)}
+                                <Avatar className="h-9 w-9">
+                                  <AvatarImage
+                                    src={
+                                      appointment.owner?.profilePicture ||
+                                      undefined
+                                    }
+                                  />
+                                  <AvatarFallback>
+                                    {appointment.owner?.firstName?.[0] || "U"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="ml-4 space-y-1">
+                                  <p className="text-sm font-medium leading-none">
+                                    {appointment.owner?.firstName}{" "}
+                                    {appointment.owner?.lastName}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {appointment.date} at {appointment.time}
+                                  </p>
+                                </div>
+                                <div
+                                  className={`ml-auto inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusColor(
+                                    appointment.status
+                                  )}`}
+                                >
+                                  {appointment.status.charAt(0).toUpperCase() +
+                                    appointment.status.slice(1)}
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   </div>
@@ -826,19 +886,58 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                             <DialogHeader>
                               <DialogTitle>Add New Appointment</DialogTitle>
                             </DialogHeader>
-                            {/* Add appointment form */}
-                            <form className="space-y-4">
+                            <form
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                handleAddAppointment(
+                                  new FormData(e.target as HTMLFormElement)
+                                );
+                              }}
+                              className="space-y-4"
+                            >
                               <div>
                                 <label
-                                  htmlFor="patientName"
+                                  htmlFor="ownerId"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Patient Name
+                                  Owner
                                 </label>
-                                <Input
-                                  id="patientName"
-                                  placeholder="Enter patient name"
-                                />
+                                <select
+                                  id="ownerId"
+                                  name="ownerId"
+                                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                  required
+                                >
+                                  <option value="">Select an owner</option>
+                                  {owners.map((owner) => (
+                                    <option key={owner.id} value={owner.id}>
+                                      {owner.firstName} {owner.lastName}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="petId"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Pet
+                                </label>
+                                <select
+                                  id="petId"
+                                  name="petId"
+                                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                  required
+                                >
+                                  <option value="">Select a pet</option>
+                                  {owners
+                                    .flatMap((owner) => owner.pets)
+                                    .map((pet) => (
+                                      <option key={pet.id} value={pet.id}>
+                                        {pet.name} ({pet.type})
+                                      </option>
+                                    ))}
+                                </select>
                               </div>
                               <div>
                                 <label
@@ -847,7 +946,26 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                                 >
                                   Date
                                 </label>
-                                <Input id="date" type="datetime-local" />
+                                <Input
+                                  id="date"
+                                  name="date"
+                                  type="date"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="time"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Time
+                                </label>
+                                <Input
+                                  id="time"
+                                  name="time"
+                                  type="time"
+                                  required
+                                />
                               </div>
                               <div>
                                 <label
@@ -858,59 +976,87 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                                 </label>
                                 <select
                                   id="status"
+                                  name="status"
                                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                  required
                                 >
-                                  <option>confirmed</option>
-                                  <option>cancelled</option>
-                                  <option>completed</option>
+                                  <option value="confirmed">Confirmed</option>
+                                  <option value="cancelled">Cancelled</option>
+                                  <option value="completed">Completed</option>
+                                  <option value="pending">Pending</option>
                                 </select>
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="notes"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Notes
+                                </label>
+                                <Input id="notes" name="notes" />
                               </div>
                               <Button type="submit">Add Appointment</Button>
                             </form>
                           </DialogContent>
                         </Dialog>
                       </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Patient Name</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {appointments.map((appointment) => (
-                            <TableRow key={appointment.id}>
-                              <TableCell>{appointment.patientName}</TableCell>
-                              <TableCell>{appointment.date}</TableCell>
-                              <TableCell>{appointment.status}</TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="mr-2"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleDeleteItem(
-                                      appointments,
-                                      setAppointments,
-                                      appointment.id
-                                    )
-                                  }
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
+                      {isLoading ? (
+                        <p>Loading appointments...</p>
+                      ) : error ? (
+                        <p className="text-red-500">{error}</p>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Owner</TableHead>
+                              <TableHead>Pet Name</TableHead>
+                              <TableHead>Pet Type</TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Time</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Actions</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {appointments.map((appointment) => {
+                              return (
+                                <TableRow key={appointment.id}>
+                                  <TableCell>
+                                    {appointment.owner.firstName}
+                                  </TableCell>
+                                  <TableCell>
+                                    {appointment.pet.name || "N/A"}
+                                  </TableCell>
+                                  <TableCell>
+                                    {appointment.pet.type || "N/A"}
+                                  </TableCell>
+                                  <TableCell>{appointment.date}</TableCell>
+                                  <TableCell>{appointment.time}</TableCell>
+                                  <TableCell>{appointment.status}</TableCell>
+                                  <TableCell>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="mr-2"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleDeleteAppointment(appointment.id)
+                                      }
+                                    >
+                                      <Trash className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -991,9 +1137,20 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                         <TableBody>
                           {owners.map((owner) => (
                             <TableRow key={owner.id}>
-                              <TableCell>{owner.name}</TableCell>
-                              <TableCell>{owner.pets.join(", ")}</TableCell>
-                              <TableCell>{owner.phone}</TableCell>
+                              <TableCell>
+                                {owner.firstName}, {owner.middleName}{" "}
+                                {owner.lastName},{" "}
+                              </TableCell>
+                              <TableCell>
+                                {" "}
+                                {owner.pets.map((pet: Pet, index: number) => (
+                                  <span key={index}>
+                                    {pet.name}
+                                    {index < owner.pets.length - 1 ? ", " : ""}
+                                  </span>
+                                ))}
+                              </TableCell>
+                              <TableCell>{owner.contact}</TableCell>
                               <TableCell>
                                 <Button
                                   variant="ghost"
@@ -1005,13 +1162,7 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() =>
-                                    handleDeleteItem(
-                                      owners,
-                                      setOwners,
-                                      owner.id
-                                    )
-                                  }
+                                  onClick={() => deleteOwner(owner.id)}
                                 >
                                   <Trash className="h-4 w-4" />
                                 </Button>
@@ -1117,7 +1268,7 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                             <TableHead>Type</TableHead>
                             <TableHead>Breed</TableHead>
                             <TableHead>Owner</TableHead>
-                            <TableHead>Age</TableHead>
+                            <TableHead>Gender</TableHead>
                             <TableHead>Actions</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1128,7 +1279,7 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                               <TableCell>{pet.type}</TableCell>
                               <TableCell>{pet.breed}</TableCell>
                               <TableCell>{pet.owner}</TableCell>
-                              <TableCell>{pet.age}</TableCell>
+                              <TableCell>{pet.gender}</TableCell>
                               <TableCell>
                                 <Button
                                   variant="ghost"
@@ -1140,9 +1291,7 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() =>
-                                    handleDeleteItem(pets, setPets, pet.id)
-                                  }
+                                  onClick={() => deletePets(pet.id)}
                                 >
                                   <Trash className="h-4 w-4" />
                                 </Button>
@@ -1492,245 +1641,236 @@ export function AdminDashboard({ userRole }: AdminDashboardProps) {
                 </Card>
               </TabsContent>
 
-              {userRole === "veterinarian" && (
-                <TabsContent value="prescriptions">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Prescriptions</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-lg font-semibold">
-                            Prescription List
-                          </h3>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add Prescription
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Add New Prescription</DialogTitle>
-                              </DialogHeader>
-                              {/* Add prescription form */}
-                              <form className="space-y-4">
-                                <div>
-                                  <label
-                                    htmlFor="petName"
-                                    className="block text-sm font-medium text-gray-700"
-                                  >
-                                    Pet Name
-                                  </label>
-                                  <Input
-                                    id="petName"
-                                    placeholder="Enter pet name"
-                                  />
-                                </div>
-                                <div>
-                                  <label
-                                    htmlFor="medication"
-                                    className="block text-sm font-medium text-gray-700"
-                                  >
-                                    Medication
-                                  </label>
-                                  <Input
-                                    id="medication"
-                                    placeholder="Enter medication name"
-                                  />
-                                </div>
-                                <div>
-                                  <label
-                                    htmlFor="dosage"
-                                    className="block text-sm font-medium text-gray-700"
-                                  >
-                                    Dosage
-                                  </label>
-                                  <Input
-                                    id="dosage"
-                                    placeholder="Enter dosage"
-                                  />
-                                </div>
-                                <div>
-                                  <label
-                                    htmlFor="instructions"
-                                    className="block text-sm font-medium text-gray-700"
-                                  >
-                                    Instructions
-                                  </label>
-                                  <Input
-                                    id="instructions"
-                                    placeholder="Enter instructions"
-                                  />
-                                </div>
-                                <Button type="submit">Add Prescription</Button>
-                              </form>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Pet Name</TableHead>
-                              <TableHead>Medication</TableHead>
-                              <TableHead>Dosage</TableHead>
-                              <TableHead>Instructions</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {prescriptions.map((prescription) => (
-                              <TableRow key={prescription.id}>
-                                <TableCell>{prescription.petName}</TableCell>
-                                <TableCell>{prescription.medication}</TableCell>
-                                <TableCell>{prescription.dosage}</TableCell>
-                                <TableCell>
-                                  {prescription.instructions}
-                                </TableCell>
-                                <TableCell>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="mr-2"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleDeleteItem(
-                                        prescriptions,
-                                        setPrescriptions,
-                                        prescription.id
-                                      )
-                                    }
-                                  >
-                                    <Trash className="h-4 w-4" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+              <TabsContent value="prescriptions">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Prescriptions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-semibold">
+                          Prescription List
+                        </h3>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button>
+                              <Plus className="mr-2 h-4 w-4" />
+                              Add Prescription
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Add New Prescription</DialogTitle>
+                            </DialogHeader>
+                            {/* Add prescription form */}
+                            <form className="space-y-4">
+                              <div>
+                                <label
+                                  htmlFor="petName"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Pet Name
+                                </label>
+                                <Input
+                                  id="petName"
+                                  placeholder="Enter pet name"
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="medication"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Medication
+                                </label>
+                                <Input
+                                  id="medication"
+                                  placeholder="Enter medication name"
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="dosage"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Dosage
+                                </label>
+                                <Input id="dosage" placeholder="Enter dosage" />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="instructions"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Instructions
+                                </label>
+                                <Input
+                                  id="instructions"
+                                  placeholder="Enter instructions"
+                                />
+                              </div>
+                              <Button type="submit">Add Prescription</Button>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
                       </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )}
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Pet Name</TableHead>
+                            <TableHead>Medication</TableHead>
+                            <TableHead>Dosage</TableHead>
+                            <TableHead>Instructions</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {prescriptions.map((prescription) => (
+                            <TableRow key={prescription.id}>
+                              <TableCell>{prescription.petName}</TableCell>
+                              <TableCell>{prescription.medication}</TableCell>
+                              <TableCell>{prescription.dosage}</TableCell>
+                              <TableCell>{prescription.instructions}</TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="mr-2"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleDeleteItem(
+                                      prescriptions,
+                                      setPrescriptions,
+                                      prescription.id
+                                    )
+                                  }
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-              {userRole === "admin" && (
-                <TabsContent value="user management">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>User Management</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-lg font-semibold">User List</h3>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add User
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Add New User</DialogTitle>
-                              </DialogHeader>
-                              {/* Add user form */}
-                              <form className="space-y-4">
-                                <div>
-                                  <label
-                                    htmlFor="name"
-                                    className="block text-sm font-medium text-gray-700"
-                                  >
-                                    Name
-                                  </label>
-                                  <Input id="name" placeholder="Enter name" />
-                                </div>
-                                <div>
-                                  <label
-                                    htmlFor="email"
-                                    className="block text-sm font-medium text-gray-700"
-                                  >
-                                    Email
-                                  </label>
-                                  <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="Enter email"
-                                  />
-                                </div>
-                                <div>
-                                  <label
-                                    htmlFor="role"
-                                    className="block text-sm font-medium text-gray-700"
-                                  >
-                                    Role
-                                  </label>
-                                  <select
-                                    id="role"
-                                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                  >
-                                    <option value="admin">Admin</option>
-                                    <option value="veterinarian">
-                                      Veterinarian
-                                    </option>
-                                    <option value="staff">Staff</option>
-                                  </select>
-                                </div>
-                                <Button type="submit">Add User</Button>
-                              </form>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Name</TableHead>
-                              <TableHead>Email</TableHead>
-                              <TableHead>Role</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {users.map((user) => (
-                              <TableRow key={user.id}>
-                                <TableCell>{user.name}</TableCell>
-                                <TableCell>{user.email}</TableCell>
-                                <TableCell>{user.role}</TableCell>
-                                <TableCell>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="mr-2"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleDeleteItem(users, setUsers, user.id)
-                                    }
-                                  >
-                                    <Trash className="h-4 w-4" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+              <TabsContent value="user management">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>User Management</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-semibold">User List</h3>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button>
+                              <Plus className="mr-2 h-4 w-4" />
+                              Add User
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Add New User</DialogTitle>
+                            </DialogHeader>
+                            {/* Add user form */}
+                            <form className="space-y-4">
+                              <div>
+                                <label
+                                  htmlFor="name"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Name
+                                </label>
+                                <Input id="name" placeholder="Enter name" />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="email"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Email
+                                </label>
+                                <Input
+                                  id="email"
+                                  type="email"
+                                  placeholder="Enter email"
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="role"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Role
+                                </label>
+                                <select
+                                  id="role"
+                                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                >
+                                  <option value="admin">Admin</option>
+                                  <option value="veterinarian">
+                                    Veterinarian
+                                  </option>
+                                  <option value="staff">Staff</option>
+                                </select>
+                              </div>
+                              <Button type="submit">Add User</Button>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
                       </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )}
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {users.map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell>{user.name}</TableCell>
+                              <TableCell>{user.email}</TableCell>
+                              <TableCell>{user.role}</TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="mr-2"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleDeleteItem(users, setUsers, user.id)
+                                  }
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </main>
         </div>

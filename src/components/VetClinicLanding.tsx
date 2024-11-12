@@ -209,7 +209,7 @@ export default function VetClinicLanding() {
           <div className="flex flex-col items-center space-y-4 text-center">
             <div className="space-y-2">
               <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none text-white">
-                Welcome to Dog Central Clinic & Grooming
+                Welcome to Dog Central Veterinary Clinic & Grooming
               </h1>
               <p className="mx-auto max-w-[700px] text-white md:text-xl">
                 We aim high to be the most trusted and respected pet care
@@ -474,12 +474,7 @@ export default function VetClinicLanding() {
       case "login":
         return <LoginPage />;
       case "admin-dashboard":
-        return loggedInUser ? (
-          <AdminDashboard
-            userRole={loggedInUser.role}
-            onLogout={handleLogout}
-          />
-        ) : null;
+        return loggedInUser ? <AdminDashboard /> : null;
       default:
         return null;
     }
