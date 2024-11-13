@@ -203,7 +203,7 @@ export function AdminDashboard() {
         "/api/appointments",
         Object.fromEntries(formData)
       );
-      const newAppointment: Appointment = response.data;
+      const newAppointment = response.data as Appointment;
       setAppointments([...appointments, newAppointment]);
     } catch (err) {
       console.error(err);
