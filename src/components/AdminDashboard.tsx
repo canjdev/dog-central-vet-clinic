@@ -148,6 +148,8 @@ interface Notification {
   ownerName: string;
 }
 
+
+
 export function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
@@ -158,6 +160,7 @@ export function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
 
   useEffect(() => {
     setMounted(true);
@@ -186,16 +189,19 @@ export function AdminDashboard() {
   }, []);
 
   const handleDeleteAppointment = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this appointment?")) return
+    setIsLoading(true)
+    setError(null)
     try {
-      await api.delete(`/api/appointments/${id}`);
-      setAppointments(
-        appointments.filter((appointment) => appointment.id !== id)
-      );
+      await api.delete(`/api/appointments/${id}`)
+      setAppointments(appointments.filter(appointment => appointment.id !== id))
     } catch (err) {
-      console.error(err);
-      setError("An error occurred while deleting the appointment");
+      console.error(err)
+      setError("An error occurred while deleting the appointment")
+    } finally {
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleAddAppointment = async (formData: FormData) => {
     try {
@@ -211,25 +217,41 @@ export function AdminDashboard() {
     }
   };
 
+  const handleEditAppointment = async (formData: FormData) => {
+    if (!editingAppointment) return
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await api.put(`/api/appointments/${editingAppointment.id}`, Object.fromEntries(formData))
+      const updatedAppointment = response.data as Appointment
+      setAppointments(appointments.map(app => app.id === updatedAppointment.id ? updatedAppointment : app))
+      setEditingAppointment(null)
+    } catch (err) {
+      console.error(err)
+      setError("An error occurred while updating the appointment")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const [owners, setOwners] = useState<Owner[]>([]);
 
+  const fetchOwner = async () => {
+    try {
+      const response = await api.get<Owner[]>("/api/profiles");
+      setOwners(response.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
   useEffect(() => {
-    const fetchOwner = async () => {
-      try {
-        const response = await api.get<Owner[]>("/api/profiles");
-        setOwners(response.data);
-      } catch (err) {
-        console.log(err);
-      }
-    };
-
     fetchOwner();
   }, []);
 
   const deleteOwner = async (ownerId: string) => {
     try {
       await api.delete(`/api/profiles/${ownerId}`);
-      // fetchOwner(); // Refresh the list of owners
+      fetchOwner(); // Refresh the list of owners
     } catch (err) {
       console.log(err);
     }
@@ -262,7 +284,7 @@ export function AdminDashboard() {
   const deletePets = async (petId: string) => {
     try {
       await api.delete(`/api/pets/${petId}`);
-      // fetchOwner(); // Refresh the list of owners
+      fetchOwner(); // Refresh the list of owners
     } catch (err) {
       console.log(err);
     }
@@ -865,17 +887,15 @@ export function AdminDashboard() {
               </TabsContent>
 
               <TabsContent value="appointments">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Appointments</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-semibold">
-                          Appointment List
-                        </h3>
-                        <Dialog>
+              <Card>
+      <CardHeader>
+        <CardTitle>Appointments</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Appointment List</h3>
+            <Dialog>
                           <DialogTrigger asChild>
                             <Button>
                               <Plus className="mr-2 h-4 w-4" />
@@ -999,67 +1019,148 @@ export function AdminDashboard() {
                             </form>
                           </DialogContent>
                         </Dialog>
+          </div>
+          {isLoading ? (
+            <p>Loading appointments...</p>
+          ) : error ? (
+            <p className="text-red-500">{error}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Owner</TableHead>
+                  <TableHead>Pet Name</TableHead>
+                  <TableHead>Pet Type</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {appointments.map((appointment) => (
+                  <TableRow key={appointment.id}>
+                    <TableCell>{appointment.owner.firstName} {appointment.owner.lastName}</TableCell>
+                    <TableCell>{appointment.pet.name || "N/A"}</TableCell>
+                    <TableCell>{appointment.pet.type || "N/A"}</TableCell>
+                    <TableCell>{appointment.date}</TableCell>
+                    <TableCell>{appointment.time}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(appointment.status)}`}>
+                        {appointment.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                      <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                const appointmentToUpdate = appointments.find(a => a.id === appointment.id);
+                                if (appointmentToUpdate) {
+                                  setEditingAppointment(appointmentToUpdate);
+                                }
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            {editingAppointment && (
+                              <>
+                                <DialogHeader>
+                                  <DialogTitle>Edit Appointment</DialogTitle>
+                                </DialogHeader>
+                                <form onSubmit={(e) => {
+                                  e.preventDefault();
+                                  handleEditAppointment(new FormData(e.currentTarget));
+                                }} className="space-y-4">
+                                  <div>
+                                    <label htmlFor="ownerId" className="block text-sm font-medium text-gray-700">Owner</label>
+                                    <select
+                                      id="ownerId"
+                                      name="ownerId"
+                                      defaultValue={editingAppointment?.ownerId || ''}
+                                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                      required
+                                    >
+                                      <option value="">Select an owner</option>
+                                      {owners.map((owner) => (
+                                        <option key={owner.id} value={owner.id}>
+                                          {owner.firstName} {owner.lastName}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label htmlFor="petId" className="block text-sm font-medium text-gray-700">Pet</label>
+                                    <select
+                                      id="petId"
+                                      name="petId"
+                                      defaultValue={editingAppointment?.pet.name || ''}
+                                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                      required
+                                    >
+                                      <option value="">Select a pet</option>
+                                      {owners.flatMap((owner) => owner.pets).map((pet) => (
+                                        <option key={pet.id} value={pet.id}>
+                                          {pet.name} ({pet.type})
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label htmlFor="date" className="block text-sm font-medium text-gray-700">Date</label>
+                                    <Input id="date" name="date" type="date" defaultValue={editingAppointment?.date || ''} required />
+                                  </div>
+                                  <div>
+                                    <label htmlFor="time" className="block text-sm font-medium text-gray-700">Time</label>
+                                    <Input id="time" name="time" type="time" defaultValue={editingAppointment?.time || ''} required />
+                                  </div>
+                                  <div>
+                                    <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
+                                    <select
+                                      id="status"
+                                      name="status"
+                                      defaultValue={editingAppointment?.status || ''}
+                                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                      required
+                                    >
+                                      <option value="confirmed">Confirmed</option>
+                                      <option value="cancelled">Cancelled</option>
+                                      <option value="completed">Completed</option>
+                                      <option value="pending">Pending</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes</label>
+                                    <Input id="notes" name="notes" defaultValue={editingAppointment?.notes || ''} />
+                                  </div>
+                                  <Button type="submit">Update Appointment</Button>
+                                </form>
+                              </>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteAppointment(appointment.id)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
                       </div>
-                      {isLoading ? (
-                        <p>Loading appointments...</p>
-                      ) : error ? (
-                        <p className="text-red-500">{error}</p>
-                      ) : (
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Owner</TableHead>
-                              <TableHead>Pet Name</TableHead>
-                              <TableHead>Pet Type</TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Time</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {appointments.map((appointment) => {
-                              return (
-                                <TableRow key={appointment.id}>
-                                  <TableCell>
-                                    {appointment.owner.firstName}
-                                  </TableCell>
-                                  <TableCell>
-                                    {appointment.pet.name || "N/A"}
-                                  </TableCell>
-                                  <TableCell>
-                                    {appointment.pet.type || "N/A"}
-                                  </TableCell>
-                                  <TableCell>{appointment.date}</TableCell>
-                                  <TableCell>{appointment.time}</TableCell>
-                                  <TableCell>{appointment.status}</TableCell>
-                                  <TableCell>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="mr-2"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleDeleteAppointment(appointment.id)
-                                      }
-                                    >
-                                      <Trash className="h-4 w-4" />
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </CardContent>
+    </Card>
               </TabsContent>
 
               <TabsContent value="owners">
