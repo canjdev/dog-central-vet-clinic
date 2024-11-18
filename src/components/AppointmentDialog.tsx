@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -9,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -27,18 +29,147 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { services } from "@/utils/sharedUtils";
+import api from "@/config/api";
 
-export function AppointmentDialog({ trigger }: { trigger: React.ReactNode }) {
+interface Appointment {
+  id: string;
+  ownerId: string;
+  date: string;
+  time: string;
+  status: "confirmed" | "cancelled" | "completed" | "pending";
+  notes: string | null;
+  pet: Pet;
+  createdAt: string;
+  owner: Owner;
+  service:
+    | "Check Up"
+    | "Vaccination"
+    | "Pet Groom"
+    | "Confinement"
+    | "Dental Cleaning"
+    | "Laboratory"
+    | "Pet Boarding"
+    | "Surgery"
+    | "Ultrasound"
+    | "Laser Therapy";
+}
+
+interface Owner {
+  id: string;
+  profilePicture: string | null;
+  firstName: string | null;
+  middleName: string | null;
+  lastName: string | null;
+  createdAt: Date;
+  contact: string;
+  pets: Pet[];
+}
+
+interface Pet {
+  id: string;
+  name: string;
+  type: string;
+  breed: string | null;
+  bio: string;
+  gender: string | null;
+  owner: string;
+  profile: string | null;
+  ownerid: string;
+  created_at: string;
+}
+
+const services = [
+  "Check Up",
+  "Vaccination",
+  "Pet Groom",
+  "Confinement",
+  "Dental Cleaning",
+  "Laboratory",
+  "Pet Boarding",
+  "Surgery",
+  "Ultrasound",
+  "Laser Therapy",
+] as const;
+
+type Service = (typeof services)[number];
+
+export function AppointmentDialog({
+  trigger,
+  ownerId,
+}: {
+  trigger: React.ReactNode;
+  ownerId: string;
+}) {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  const [owner, setOwner] = useState<Owner | null>(null);
+  const [selectedPet, setSelectedPet] = useState<string>("");
+  const [selectedService, setSelectedService] = useState<Service | "">("");
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  useEffect(() => {
+    const fetchOwnerData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await api.get<Owner>(`/api/owners/${ownerId}`);
+        setOwner(response.data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to fetch owner data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (ownerId) {
+      fetchOwnerData();
+    }
+  }, [ownerId]);
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setIsConfirmationOpen(true);
-    setIsDialogOpen(false);
+    setIsLoading(true);
+    setError(null);
+
+    if (!date || !selectedPet || !selectedService || !selectedTime) {
+      setError("Please fill in all required fields");
+      setIsLoading(false);
+      return;
+    }
+
+    const appointmentData: Partial<Appointment> = {
+      ownerId,
+      date: date.toISOString().split("T")[0],
+      time: selectedTime,
+      status: "pending",
+      notes: null,
+      pet: owner!.pets.find((pet) => pet.id === selectedPet)!,
+      service: selectedService as Service,
+    };
+
+    try {
+      await api.post("/api/appointments", appointmentData);
+      setIsConfirmationOpen(true);
+      setIsDialogOpen(false);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to create appointment");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
+  }
 
   return (
     <>
@@ -55,52 +186,40 @@ export function AppointmentDialog({ trigger }: { trigger: React.ReactNode }) {
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="pet-name">Pet&apos;s Name</Label>
-                <Input id="pet-name" placeholder="Enter pet's name" required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="pet-type">Pet Type</Label>
-                <Select required>
-                  <SelectTrigger id="pet-type">
-                    <SelectValue placeholder="Select pet type" />
+                <Label htmlFor="pet">Pet</Label>
+                <Select
+                  value={selectedPet}
+                  onValueChange={setSelectedPet}
+                  required
+                >
+                  <SelectTrigger id="pet">
+                    <SelectValue placeholder="Select pet" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cat">Cat</SelectItem>
-                    <SelectItem value="dog">Dog</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="breed">Breed</Label>
-                <Input id="breed" placeholder="Enter pet's breed" required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="gender">Gender</Label>
-                <Select required>
-                  <SelectTrigger id="gender">
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="neutered">Neutered</SelectItem>
+                    {owner?.pets.map((pet) => (
+                      <SelectItem key={pet.id} value={pet.id}>
+                        {pet.name} ({pet.type})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="service">Service</Label>
-                <Select required>
+                <Select
+                  value={selectedService}
+                  onValueChange={(value) =>
+                    setSelectedService(value as Service)
+                  }
+                  required
+                >
                   <SelectTrigger id="service">
                     <SelectValue placeholder="Select service" />
                   </SelectTrigger>
                   <SelectContent>
-                    {services.map((service, index) => (
-                      <SelectItem
-                        key={index}
-                        value={service.name.toLowerCase().replace(/\s+/g, "-")}
-                      >
-                        {service.name}
+                    {services.map((service) => (
+                      <SelectItem key={service} value={service}>
+                        {service}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -118,23 +237,31 @@ export function AppointmentDialog({ trigger }: { trigger: React.ReactNode }) {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="time">Time Slot</Label>
-                <Select required>
+                <Select
+                  value={selectedTime}
+                  onValueChange={setSelectedTime}
+                  required
+                >
                   <SelectTrigger id="time">
                     <SelectValue placeholder="Select time" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="9">9:00 AM - 10:00 AM</SelectItem>
-                    <SelectItem value="10">10:00 AM - 11:00 AM</SelectItem>
-                    <SelectItem value="11">11:00 AM - 12:00 NN</SelectItem>
-                    <SelectItem value="14">12:00 NN - 1:00 PM</SelectItem>
-                    <SelectItem value="15">1:00 PM - 2:00 PM</SelectItem>
-                    <SelectItem value="16">2:00 PM - 3:00 PM</SelectItem>
-                    <SelectItem value="17">3:00 PM - 4:00 PM</SelectItem>
+                    <SelectItem value="09:00">9:00 AM - 10:00 AM</SelectItem>
+                    <SelectItem value="10:00">10:00 AM - 11:00 AM</SelectItem>
+                    <SelectItem value="11:00">11:00 AM - 12:00 PM</SelectItem>
+                    <SelectItem value="12:00">12:00 PM - 1:00 PM</SelectItem>
+                    <SelectItem value="13:00">1:00 PM - 2:00 PM</SelectItem>
+                    <SelectItem value="14:00">2:00 PM - 3:00 PM</SelectItem>
+                    <SelectItem value="15:00">3:00 PM - 4:00 PM</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="w-full mt-2" type="submit">
-                Schedule Appointment
+              <Button
+                className="w-full mt-2"
+                type="submit"
+                disabled={isLoading}
+              >
+                {isLoading ? "Scheduling..." : "Schedule Appointment"}
               </Button>
             </div>
           </form>
