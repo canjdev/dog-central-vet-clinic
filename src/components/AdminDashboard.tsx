@@ -16,6 +16,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -160,7 +171,10 @@ type Services =
   | "Surgery"
   | "Ultrasound"
   | "Laser Therapy";
+
 type AppointmentStatus = "confirmed" | "cancelled" | "completed" | "pending";
+
+const petTypeOptions = ["cat", "dog", "other"];
 
 const servicesOptions: Services[] = [
   "Check Up",
@@ -192,6 +206,9 @@ export function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [owners, setOwners] = useState<Owner[]>([]);
+  const [editingOwner, setEditingOwner] = useState<Owner | null>(null);
+
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [editingAppointment, setEditingAppointment] =
     useState<Appointment | null>(null);
@@ -212,6 +229,7 @@ export function AdminDashboard() {
 
   useEffect(() => {
     fetchAppointments();
+    fetchOwners();
   }, []);
 
   const fetchAppointments = async () => {
@@ -227,25 +245,13 @@ export function AdminDashboard() {
       setIsLoading(false);
     }
   };
-  // const fetchPetDetails = async (petId: string): Promise<Pet> => {
-  //   try {
-  //     const response = await api.get<Pet>(`/api/pets/${petId}`);
-  //     return response.data;
-  //   } catch (err) {
-  //     console.error("Error fetching pet details:", err);
-  //     throw new Error("Failed to fetch pet details");
-  //   }
-  // };
 
   const handleAddAppointment = async (formData: FormData) => {
     setIsLoading(true);
     setError(null);
     try {
       const newAppointmentData = Object.fromEntries(formData);
-      console.log("Sending new appointment data:", newAppointmentData);
       const response = await api.post("/api/appointments", newAppointmentData);
-      console.log("Received response:", response.data);
-
       const newAppointment: Appointment = {
         ...response.data,
         pet: {
@@ -254,7 +260,6 @@ export function AdminDashboard() {
           type: newAppointmentData.petType as string,
         },
       };
-
       setAppointments([...appointments, newAppointment]);
     } catch (err) {
       console.error(err);
@@ -270,16 +275,10 @@ export function AdminDashboard() {
     setError(null);
     try {
       const updatedAppointmentData = Object.fromEntries(formData);
-      console.log(
-        `Sending update request to /api/appointments/${editingAppointment.id} with data:`,
-        updatedAppointmentData
-      );
       const response = await api.put(
         `/api/appointments/${editingAppointment.id}`,
         updatedAppointmentData
       );
-      console.log("Received response:", response.data);
-
       if (response.status === 200) {
         const updatedAppointment: Appointment = {
           ...response.data,
@@ -289,7 +288,6 @@ export function AdminDashboard() {
             type: updatedAppointmentData.petType as string,
           },
         };
-
         setAppointments(
           appointments.map((app) =>
             app.id === editingAppointment.id ? updatedAppointment : app
@@ -331,26 +329,102 @@ export function AdminDashboard() {
     }
   };
 
-  const [owners, setOwners] = useState<Owner[]>([]);
-
-  const fetchOwner = async () => {
+  const fetchOwners = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const response = await api.get<Owner[]>("/api/profiles");
-      setOwners(response.data);
+      const response = await api.get("/api/profiles");
+      if (response.status === 200) {
+        setOwners(response.data);
+      } else {
+        throw new Error(`Failed to fetch owners. Status: ${response.status}`);
+      }
     } catch (err) {
-      console.log(err);
+      console.error("Error fetching owners:", err);
+      setError(
+        `An error occurred while fetching owners: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
-  useEffect(() => {
-    fetchOwner();
-  }, []);
 
-  const deleteOwner = async (ownerId: string) => {
+  const handleAddOwner = async (formData: FormData) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      await api.delete(`/api/profiles/${ownerId}`);
-      fetchOwner(); // Refresh the list of owners
+      const newOwnerData = Object.fromEntries(formData);
+      const response = await api.post("/api/profiles", newOwnerData);
+      if (response.status === 201) {
+        setOwners([...owners, response.data]);
+      } else {
+        throw new Error(`Failed to add owner. Status: ${response.status}`);
+      }
     } catch (err) {
-      console.log(err);
+      console.error("Error adding owner:", err);
+      setError(
+        `An error occurred while adding the owner: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditOwner = async (formData: FormData) => {
+    if (!editingOwner) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const updatedOwnerData = Object.fromEntries(formData);
+      const response = await api.put(
+        `/api/profiles/${editingOwner.id}`,
+        updatedOwnerData
+      );
+      if (response.status === 200) {
+        setOwners(
+          owners.map((owner) =>
+            owner.id === editingOwner.id ? response.data : owner
+          )
+        );
+        setEditingOwner(null);
+      } else {
+        throw new Error(`Failed to update owner. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error updating owner:", err);
+      setError(
+        `An error occurred while updating the owner: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteOwner = async (ownerId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.delete(`/api/profiles/${ownerId}`);
+      if (response.status === 200) {
+        setOwners(owners.filter((owner) => owner.id !== ownerId));
+      } else {
+        throw new Error(`Failed to delete owner. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error deleting owner:", err);
+      setError(
+        `An error occurred while deleting the owner: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -381,7 +455,7 @@ export function AdminDashboard() {
   const deletePets = async (petId: string) => {
     try {
       await api.delete(`/api/pets/${petId}`);
-      fetchOwner(); // Refresh the list of owners
+      fetchOwners(); // Refresh the list of owners
     } catch (err) {
       console.log(err);
     }
@@ -1051,7 +1125,19 @@ export function AdminDashboard() {
                                 >
                                   Pet Type
                                 </label>
-                                <Input id="petType" name="petType" required />
+                                <select
+                                  id="petType"
+                                  name="petType"
+                                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                  required
+                                >
+                                  {petTypeOptions.map((type) => (
+                                    <option key={type} value={type}>
+                                      {type.charAt(0).toUpperCase() +
+                                        type.slice(1)}
+                                    </option>
+                                  ))}
+                                </select>
                               </div>
                               <div>
                                 <label
@@ -1143,9 +1229,19 @@ export function AdminDashboard() {
                         </Dialog>
                       </div>
                       {isLoading ? (
-                        <p>Loading appointments...</p>
+                        <div className="flex justify-center items-center h-32">
+                          <p className="text-lg text-gray-500">
+                            Loading appointments...
+                          </p>
+                        </div>
                       ) : error ? (
-                        <p className="text-red-500">{error}</p>
+                        <div
+                          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                          role="alert"
+                        >
+                          <strong className="font-bold">Error:</strong>
+                          <span className="block sm:inline"> {error}</span>
+                        </div>
                       ) : (
                         <Table>
                           <TableHeader>
@@ -1164,12 +1260,8 @@ export function AdminDashboard() {
                             {appointments.map((appointment) => (
                               <TableRow key={appointment.id}>
                                 <TableCell>
-                                  {owners.find(
-                                    (owner) => owner.id === appointment.ownerId
-                                  )?.firstName || "Unknown"}{" "}
-                                  {owners.find(
-                                    (owner) => owner.id === appointment.ownerId
-                                  )?.lastName || "Owner"}
+                                  {appointment.owner?.firstName}{" "}
+                                  {appointment.owner?.lastName}
                                 </TableCell>
                                 <TableCell>{appointment.pet.name}</TableCell>
                                 <TableCell>{appointment.pet.type}</TableCell>
@@ -1186,234 +1278,236 @@ export function AdminDashboard() {
                                   </span>
                                 </TableCell>
                                 <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <Dialog
-                                      open={isEditDialogOpen}
-                                      onOpenChange={setIsEditDialogOpen}
-                                    >
+                                  <div className="flex items-center space-x-2">
+                                    <Dialog>
                                       <DialogTrigger asChild>
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          onClick={() => {
-                                            setEditingAppointment(appointment);
-                                            setIsEditDialogOpen(true);
-                                          }}
+                                          onClick={() =>
+                                            setEditingAppointment(appointment)
+                                          }
                                         >
                                           <Edit className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Edit appointment
+                                          </span>
                                         </Button>
                                       </DialogTrigger>
                                       <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>
+                                            Edit Appointment
+                                          </DialogTitle>
+                                        </DialogHeader>
                                         {editingAppointment && (
-                                          <>
-                                            <DialogHeader>
-                                              <DialogTitle>
-                                                Edit Appointment
-                                              </DialogTitle>
-                                            </DialogHeader>
-                                            <form
-                                              onSubmit={(e) => {
-                                                e.preventDefault();
-                                                const formData = new FormData(
-                                                  e.currentTarget
-                                                );
-                                                formData.append(
-                                                  "id",
-                                                  editingAppointment.id
-                                                );
-                                                handleEditAppointment(formData);
-                                              }}
-                                              className="space-y-4"
-                                            >
-                                              <input
-                                                type="hidden"
-                                                name="id"
-                                                value={editingAppointment.id}
+                                          <form
+                                            onSubmit={(e) => {
+                                              e.preventDefault();
+                                              const formData = new FormData(
+                                                e.currentTarget
+                                              );
+                                              formData.append(
+                                                "id",
+                                                editingAppointment.id
+                                              );
+                                              handleEditAppointment(formData);
+                                            }}
+                                            className="space-y-4"
+                                          >
+                                            <div>
+                                              <label
+                                                htmlFor="ownerId"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Owner
+                                              </label>
+                                              <select
+                                                id="ownerId"
+                                                name="ownerId"
+                                                defaultValue={
+                                                  editingAppointment.ownerId
+                                                }
+                                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                                required
+                                              >
+                                                {owners.map((owner) => (
+                                                  <option
+                                                    key={owner.id}
+                                                    value={owner.id}
+                                                  >
+                                                    {owner.firstName}{" "}
+                                                    {owner.lastName}
+                                                  </option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="petName"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Pet Name
+                                              </label>
+                                              <Input
+                                                id="petName"
+                                                name="petName"
+                                                defaultValue={
+                                                  editingAppointment.pet.name
+                                                }
+                                                required
                                               />
-                                              <div>
-                                                <label
-                                                  htmlFor="ownerId"
-                                                  className="block text-sm font-medium text-gray-700"
-                                                >
-                                                  Owner
-                                                </label>
-                                                <select
-                                                  id="ownerId"
-                                                  name="ownerId"
-                                                  defaultValue={
-                                                    editingAppointment.ownerId
-                                                  }
-                                                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                                  required
-                                                >
-                                                  {owners.map((owner) => (
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="petType"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Pet Type
+                                              </label>
+                                              <select
+                                                id="petType"
+                                                name="petType"
+                                                defaultValue={
+                                                  editingAppointment.pet.type
+                                                }
+                                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                                required
+                                              >
+                                                {petTypeOptions.map((type) => (
+                                                  <option
+                                                    key={type}
+                                                    value={type}
+                                                  >
+                                                    {type
+                                                      .charAt(0)
+                                                      .toUpperCase() +
+                                                      type.slice(1)}
+                                                  </option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="date"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Date
+                                              </label>
+                                              <Input
+                                                id="date"
+                                                name="date"
+                                                type="date"
+                                                defaultValue={
+                                                  editingAppointment.date
+                                                }
+                                                required
+                                              />
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="time"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Time
+                                              </label>
+                                              <select
+                                                id="time"
+                                                name="time"
+                                                defaultValue={
+                                                  editingAppointment.time
+                                                }
+                                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                                required
+                                              >
+                                                {timeOptions.map(
+                                                  (option, index) => (
                                                     <option
-                                                      key={owner.id}
-                                                      value={owner.id}
+                                                      key={index}
+                                                      value={option}
                                                     >
-                                                      {owner.firstName}{" "}
-                                                      {owner.lastName}
+                                                      {option}
                                                     </option>
-                                                  ))}
-                                                </select>
-                                              </div>
-                                              <div>
-                                                <label
-                                                  htmlFor="petName"
-                                                  className="block text-sm font-medium text-gray-700"
-                                                >
-                                                  Pet Name
-                                                </label>
-                                                <Input
-                                                  id="petName"
-                                                  name="petName"
-                                                  defaultValue={
-                                                    editingAppointment.pet.name
-                                                  }
-                                                  required
-                                                />
-                                              </div>
-                                              <div>
-                                                <label
-                                                  htmlFor="petType"
-                                                  className="block text-sm font-medium text-gray-700"
-                                                >
-                                                  Pet Type
-                                                </label>
-                                                <Input
-                                                  id="petType"
-                                                  name="petType"
-                                                  defaultValue={
-                                                    editingAppointment.pet.type
-                                                  }
-                                                  required
-                                                />
-                                              </div>
-                                              <div>
-                                                <label
-                                                  htmlFor="date"
-                                                  className="block text-sm font-medium text-gray-700"
-                                                >
-                                                  Date
-                                                </label>
-                                                <Input
-                                                  id="date"
-                                                  name="date"
-                                                  type="date"
-                                                  defaultValue={
-                                                    editingAppointment.date
-                                                  }
-                                                  required
-                                                />
-                                              </div>
-                                              <div>
-                                                <label
-                                                  htmlFor="time"
-                                                  className="block text-sm font-medium text-gray-700"
-                                                >
-                                                  Time
-                                                </label>
-                                                <select
-                                                  id="time"
-                                                  name="time"
-                                                  defaultValue={
-                                                    editingAppointment.time
-                                                  }
-                                                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                                  required
-                                                >
-                                                  {timeOptions.map(
-                                                    (option, index) => (
-                                                      <option
-                                                        key={index}
-                                                        value={option}
-                                                      >
-                                                        {option}
-                                                      </option>
-                                                    )
-                                                  )}
-                                                </select>
-                                              </div>
-                                              <div>
-                                                <label
-                                                  htmlFor="services"
-                                                  className="block text-sm font-medium text-gray-700"
-                                                >
-                                                  Services
-                                                </label>
-                                                <select
-                                                  id="services"
-                                                  name="services"
-                                                  defaultValue={
-                                                    editingAppointment.services
-                                                  }
-                                                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                                  required
-                                                >
-                                                  {servicesOptions.map(
-                                                    (service) => (
-                                                      <option
-                                                        key={service}
-                                                        value={service}
-                                                      >
-                                                        {service}
-                                                      </option>
-                                                    )
-                                                  )}
-                                                </select>
-                                              </div>
-                                              <div>
-                                                <label
-                                                  htmlFor="status"
-                                                  className="block text-sm font-medium text-gray-700"
-                                                >
-                                                  Status
-                                                </label>
-                                                <select
-                                                  id="status"
-                                                  name="status"
-                                                  defaultValue={
-                                                    editingAppointment.status
-                                                  }
-                                                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                                  required
-                                                >
-                                                  {statusOptions.map(
-                                                    (status) => (
-                                                      <option
-                                                        key={status}
-                                                        value={status}
-                                                      >
-                                                        {status
-                                                          .charAt(0)
-                                                          .toUpperCase() +
-                                                          status.slice(1)}
-                                                      </option>
-                                                    )
-                                                  )}
-                                                </select>
-                                              </div>
-                                              <div>
-                                                <label
-                                                  htmlFor="notes"
-                                                  className="block text-sm font-medium text-gray-700"
-                                                >
-                                                  Notes
-                                                </label>
-                                                <Input
-                                                  id="notes"
-                                                  name="notes"
-                                                  defaultValue={
-                                                    editingAppointment.notes ||
-                                                    ""
-                                                  }
-                                                />
-                                              </div>
-                                              <Button type="submit">
-                                                Update Appointment
-                                              </Button>
-                                            </form>
-                                          </>
+                                                  )
+                                                )}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="services"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Services
+                                              </label>
+                                              <select
+                                                id="services"
+                                                name="services"
+                                                defaultValue={
+                                                  editingAppointment.services
+                                                }
+                                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                                required
+                                              >
+                                                {servicesOptions.map(
+                                                  (service) => (
+                                                    <option
+                                                      key={service}
+                                                      value={service}
+                                                    >
+                                                      {service}
+                                                    </option>
+                                                  )
+                                                )}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="status"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Status
+                                              </label>
+                                              <select
+                                                id="status"
+                                                name="status"
+                                                defaultValue={
+                                                  editingAppointment.status
+                                                }
+                                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                                required
+                                              >
+                                                {statusOptions.map((status) => (
+                                                  <option
+                                                    key={status}
+                                                    value={status}
+                                                  >
+                                                    {status
+                                                      .charAt(0)
+                                                      .toUpperCase() +
+                                                      status.slice(1)}
+                                                  </option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="notes"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Notes
+                                              </label>
+                                              <Input
+                                                id="notes"
+                                                name="notes"
+                                                defaultValue={
+                                                  editingAppointment.notes || ""
+                                                }
+                                              />
+                                            </div>
+                                            <Button type="submit">
+                                              Update Appointment
+                                            </Button>
+                                          </form>
                                         )}
                                       </DialogContent>
                                     </Dialog>
@@ -1425,6 +1519,9 @@ export function AdminDashboard() {
                                       }
                                     >
                                       <Trash className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Delete appointment
+                                      </span>
                                     </Button>
                                   </div>
                                 </TableCell>
@@ -1441,7 +1538,7 @@ export function AdminDashboard() {
               <TabsContent value="owners">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Pet Owners</CardTitle>
+                    <CardTitle>Owners</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -1458,30 +1555,49 @@ export function AdminDashboard() {
                             <DialogHeader>
                               <DialogTitle>Add New Owner</DialogTitle>
                             </DialogHeader>
-                            {/* Add owner form */}
-                            <form className="space-y-4">
+                            <form
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                handleAddOwner(
+                                  new FormData(e.target as HTMLFormElement)
+                                );
+                              }}
+                              className="space-y-4"
+                            >
                               <div>
                                 <label
-                                  htmlFor="ownerName"
+                                  htmlFor="firstName"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Owner Name
+                                  First Name
                                 </label>
                                 <Input
-                                  id="ownerName"
-                                  placeholder="Enter owner name"
+                                  id="firstName"
+                                  name="firstName"
+                                  required
                                 />
                               </div>
                               <div>
                                 <label
-                                  htmlFor="pets"
+                                  htmlFor="lastName"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Pets
+                                  Last Name
+                                </label>
+                                <Input id="lastName" name="lastName" />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="email"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Email
                                 </label>
                                 <Input
-                                  id="pets"
-                                  placeholder="Enter pet names (comma separated)"
+                                  id="email"
+                                  name="email"
+                                  type="email"
+                                  required
                                 />
                               </div>
                               <div>
@@ -1491,62 +1607,207 @@ export function AdminDashboard() {
                                 >
                                   Phone
                                 </label>
-                                <Input
-                                  id="phone"
-                                  placeholder="Enter phone number"
-                                />
+                                <Input id="phone" name="phone" type="tel" />
                               </div>
                               <Button type="submit">Add Owner</Button>
                             </form>
                           </DialogContent>
                         </Dialog>
                       </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Pets</TableHead>
-                            <TableHead>Phone</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {owners.map((owner) => (
-                            <TableRow key={owner.id}>
-                              <TableCell>
-                                {owner.firstName}, {owner.middleName}{" "}
-                                {owner.lastName},{" "}
-                              </TableCell>
-                              <TableCell>
-                                {" "}
-                                {owner.pets.map((pet: Pet, index: number) => (
-                                  <span key={index}>
-                                    {pet.name}
-                                    {index < owner.pets.length - 1 ? ", " : ""}
-                                  </span>
-                                ))}
-                              </TableCell>
-                              <TableCell>{owner.contact}</TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="mr-2"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteOwner(owner.id)}
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
+                      {isLoading ? (
+                        <div className="flex justify-center items-center h-32">
+                          <p className="text-lg text-gray-500">
+                            Loading owners...
+                          </p>
+                        </div>
+                      ) : error ? (
+                        <div
+                          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                          role="alert"
+                        >
+                          <strong className="font-bold">Error:</strong>
+                          <span className="block sm:inline"> {error}</span>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Contact</TableHead>
+                              <TableHead>Pets</TableHead>
+                              <TableHead>Actions</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {owners.map((owner) => (
+                              <TableRow key={owner.id}>
+                                <TableCell>
+                                  <div className="flex items-center space-x-3">
+                                    <Avatar>
+                                      <AvatarImage
+                                        src={
+                                          owner.profilePicture ||
+                                          "/placeholder-user.jpg"
+                                        }
+                                        alt={`${owner.firstName} ${
+                                          owner.lastName || ""
+                                        }`}
+                                      />
+                                      <AvatarFallback>
+                                        {owner.firstName[0]}
+                                        {owner.lastName
+                                          ? owner.lastName[0]
+                                          : ""}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span>
+                                      {owner.firstName} {owner.lastName || ""}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div>{owner.email}</div>
+                                  <div>{owner.contact}</div>
+                                </TableCell>
+                                <TableCell>
+                                  {owner.pets.map((pet) => pet.name).join(", ")}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => setEditingOwner(owner)}
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Edit owner
+                                          </span>
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>Edit Owner</DialogTitle>
+                                        </DialogHeader>
+                                        <form
+                                          onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(
+                                              e.currentTarget
+                                            );
+                                            formData.append("id", owner.id);
+                                            handleEditOwner(formData);
+                                          }}
+                                          className="space-y-4"
+                                        >
+                                          <div>
+                                            <label
+                                              htmlFor="editFirstName"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              First Name
+                                            </label>
+                                            <Input
+                                              id="editFirstName"
+                                              name="firstName"
+                                              defaultValue={owner.firstName}
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editLastName"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Last Name
+                                            </label>
+                                            <Input
+                                              id="editLastName"
+                                              name="lastName"
+                                              defaultValue={
+                                                owner.lastName || ""
+                                              }
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editEmail"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Email
+                                            </label>
+                                            <Input
+                                              id="editEmail"
+                                              name="email"
+                                              type="email"
+                                              defaultValue={owner.email}
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editPhone"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Phone
+                                            </label>
+                                            <Input
+                                              id="editPhone"
+                                              name="phone"
+                                              type="tel"
+                                              defaultValue={owner.contact || ""}
+                                            />
+                                          </div>
+                                          <Button type="submit">
+                                            Update Owner
+                                          </Button>
+                                        </form>
+                                      </DialogContent>
+                                    </Dialog>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                          <Trash className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Delete owner
+                                          </span>
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>
+                                            Are you absolutely sure?
+                                          </AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This action cannot be undone. This
+                                            will permanently delete the owner
+                                            and remove the data from our
+                                            servers.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>
+                                            Cancel
+                                          </AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() =>
+                                              handleDeleteOwner(owner.id)
+                                            }
+                                          >
+                                            Delete
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
