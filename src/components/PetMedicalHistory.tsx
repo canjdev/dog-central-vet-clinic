@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -20,6 +20,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Bell } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import api from "@/config/api";
 import { useNavigate } from "react-router-dom";
 
@@ -58,19 +65,19 @@ const mockBookingHistory = [
   },
 ];
 
-interface Pet {
+interface Appointment {
   id: string;
-  name: string;
-  type: string;
-  breed: string | null;
-  bio: string;
-  gender: string | null;
-  owner: string;
-  profile: string | null;
-  ownerid: string;
-  created_at: string;
+  ownerId: string;
+  date: string;
+  time: string;
+  services: string;
+  status: "confirmed" | "cancelled" | "completed" | "pending";
+  notes: string | null;
+  petName: string;
+  petType: string;
+  owner: Owner;
+  pet: Pet;
 }
-
 interface Owner {
   id: string;
   profilePicture: string | null;
@@ -82,17 +89,63 @@ interface Owner {
   pets: Pet[];
 }
 
-interface Appointment {
+interface Pet {
   id: string;
-  ownerId: string;
-  date: string;
-  time: string;
-  status: "confirmed" | "cancelled" | "completed" | "pending";
-  notes: string | null;
-  pets: Pet[];
-  createdAt: string;
-  owner: Owner[];
+  name: string;
+  type: string;
+  breed: string | null;
+  bio: string;
+  gender: string | null;
+  owner: Owner;
+  profile: string | null;
+  ownerid: string;
+  created_at: string;
 }
+
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+  ownerName: string;
+}
+
+// type Services =
+//   | "Check Up"
+//   | "Vaccination"
+//   | "Pet Grooming"
+//   | "Confinement"
+//   | "Dental Cleaning"
+//   | "Laboratory"
+//   | "Pet Boarding"
+//   | "Surgery"
+//   | "Ultrasound"
+//   | "Laser Therapy";
+
+// type AppointmentStatus = "confirmed" | "cancelled" | "completed" | "pending";
+
+// const petTypeOptions = ["cat", "dog", "other"];
+
+// const servicesOptions: Services[] = [
+//   "Check Up",
+//   "Vaccination",
+//   "Pet Grooming",
+//   "Confinement",
+//   "Dental Cleaning",
+//   "Laboratory",
+//   "Pet Boarding",
+//   "Surgery",
+//   "Ultrasound",
+//   "Laser Therapy",
+// ];
+
+// const statusOptions: AppointmentStatus[] = [
+//   "confirmed",
+//   "cancelled",
+//   "completed",
+//   "pending",
+// ];
 
 // Mock appointment data
 const mockAppointment: Appointment = {
@@ -147,7 +200,21 @@ export function PetMedicalHistory() {
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPetDialogOpen, setIsPetDialogOpen] = useState(false);
-  const [hasBookedAppointment /*setHasBookedAppointment*/] = useState(true); // Set to true for demonstration
+  const [hasBookedAppointment] = useState(true);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await api.get<Notification[]>("/api/notifications");
+      setNotifications(response.data);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
 
   const handleLogout = async () => {
     const response = await api.post("/api/auth/logout");
@@ -176,7 +243,7 @@ export function PetMedicalHistory() {
   const handleSaveProfile = async () => {
     try {
       // Implement the API call to save the profile
-      // await api.put('/api/owner', owner);
+      await api.put("/api/owner", owner);
       console.log("Profile saved:", owner);
       setIsDialogOpen(false);
     } catch (error) {
@@ -303,7 +370,7 @@ export function PetMedicalHistory() {
                     <DialogTitle>Pet Information</DialogTitle>
                   </DialogHeader>
                   <div className="py-4">
-                    {mockAppointment.pets.map((pet) => (
+                    {mockAppointment.pet.map((pet) => (
                       <div key={pet.id} className="mb-4">
                         <h3 className="text-lg font-semibold">{pet.name}</h3>
                         <p>Type: {pet.type}</p>
@@ -320,6 +387,45 @@ export function PetMedicalHistory() {
                 </DialogContent>
               </Dialog>
             )}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full">
+                  <Bell className="mr-2 h-4 w-4" />
+                  Notifications
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <ScrollArea className="h-80">
+                  <div className="flex flex-col gap-2 p-4">
+                    <h4 className="font-medium leading-none mb-2">
+                      Notifications
+                    </h4>
+                    {notifications.length > 0 ? (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className="flex flex-col gap-1 border-b pb-2"
+                        >
+                          <p className="text-sm font-medium">
+                            {notification.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {notification.time}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No notifications
+                      </p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
           </CardContent>
         </Card>
 

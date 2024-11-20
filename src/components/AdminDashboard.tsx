@@ -94,7 +94,7 @@ interface Pet {
   breed: string | null;
   bio: string;
   gender: string | null;
-  owner: string;
+  owner: Owner;
   profile: string | null;
   ownerid: string;
   created_at: string;
@@ -208,7 +208,10 @@ export function AdminDashboard() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [owners, setOwners] = useState<Owner[]>([]);
   const [editingOwner, setEditingOwner] = useState<Owner | null>(null);
-
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [editingPet, setEditingPet] = useState<Pet | null>(null);
+  const [totalPets, setTotalPets] = useState(0);
+  const [newPetsCount, setNewPetsCount] = useState(0);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [editingAppointment, setEditingAppointment] =
     useState<Appointment | null>(null);
@@ -230,6 +233,7 @@ export function AdminDashboard() {
   useEffect(() => {
     fetchAppointments();
     fetchOwners();
+    fetchPets();
   }, []);
 
   const fetchAppointments = async () => {
@@ -251,14 +255,17 @@ export function AdminDashboard() {
     setError(null);
     try {
       const newAppointmentData = Object.fromEntries(formData);
-      const response = await api.post("/api/appointments", newAppointmentData);
+      const response = await api.post<Appointment>(
+        "/api/appointments",
+        newAppointmentData
+      );
       const newAppointment: Appointment = {
         ...response.data,
-        pet: {
-          id: response.data.petId,
-          name: newAppointmentData.petName as string,
-          type: newAppointmentData.petType as string,
-        },
+        // pet: {
+        //   id: response.data.petId,
+        //   name: newAppointmentData.petName as string,
+        //   type: newAppointmentData.petType as string,
+        // },
       };
       setAppointments([...appointments, newAppointment]);
     } catch (err) {
@@ -275,18 +282,18 @@ export function AdminDashboard() {
     setError(null);
     try {
       const updatedAppointmentData = Object.fromEntries(formData);
-      const response = await api.put(
+      const response = await api.put<Appointment>(
         `/api/appointments/${editingAppointment.id}`,
         updatedAppointmentData
       );
       if (response.status === 200) {
         const updatedAppointment: Appointment = {
           ...response.data,
-          pet: {
-            id: response.data.petId,
-            name: updatedAppointmentData.petName as string,
-            type: updatedAppointmentData.petType as string,
-          },
+          // pet: {
+          //   id: response.data.petId,
+          //   name: updatedAppointmentData.petName as string,
+          //   type: updatedAppointmentData.petType as string,
+          // },
         };
         setAppointments(
           appointments.map((app) =>
@@ -333,7 +340,7 @@ export function AdminDashboard() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.get("/api/profiles");
+      const response = await api.get<Owner[]>("/api/profiles");
       if (response.status === 200) {
         setOwners(response.data);
       } else {
@@ -356,7 +363,7 @@ export function AdminDashboard() {
     setError(null);
     try {
       const newOwnerData = Object.fromEntries(formData);
-      const response = await api.post("/api/profiles", newOwnerData);
+      const response = await api.post<Owner>("/api/profiles", newOwnerData);
       if (response.status === 201) {
         setOwners([...owners, response.data]);
       } else {
@@ -380,7 +387,7 @@ export function AdminDashboard() {
     setError(null);
     try {
       const updatedOwnerData = Object.fromEntries(formData);
-      const response = await api.put(
+      const response = await api.put<Owner>(
         `/api/profiles/${editingOwner.id}`,
         updatedOwnerData
       );
@@ -428,36 +435,107 @@ export function AdminDashboard() {
     }
   };
 
-  const [pets, setPets] = useState<Pet[]>([]);
-  const [totalPets, setTotalPets] = useState(0);
-  const [newPetsCount, setNewPetsCount] = useState(0);
-
-  useEffect(() => {
-    const fetchPets = async () => {
-      try {
-        const response = await api.get<Pet[]>("/api/pets");
-        setPets(response.data);
-        setTotalPets(response.data.length);
-        const lastHour = new Date(Date.now() - 60 * 60 * 1000); // 1 hour in milliseconds
-        const recentPets = response.data.filter((pet) => {
-          const petCreatedAt = new Date(pet.created_at);
-          return petCreatedAt > lastHour;
-        });
-        setNewPetsCount(recentPets.length);
-      } catch (err) {
-        console.log(err);
-      }
-    };
-
-    fetchPets();
-  }, []);
-
-  const deletePets = async (petId: string) => {
+  const fetchPets = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      await api.delete(`/api/pets/${petId}`);
-      fetchOwners(); // Refresh the list of owners
+      const response = await api.get<Pet[]>("/api/pets");
+      setPets(response.data);
+      setTotalPets(response.data.length);
+      const lastHour = new Date(Date.now() - 60 * 60 * 1000);
+      const recentPets = response.data.filter((pet) => {
+        const petCreatedAt = new Date(pet.created_at);
+        return petCreatedAt > lastHour;
+      });
+      setNewPetsCount(recentPets.length);
     } catch (err) {
-      console.log(err);
+      console.error("Error fetching pets:", err);
+      setError(
+        `An error occurred while fetching pets: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddPet = async (formData: FormData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const newPetData = Object.fromEntries(formData);
+      const response = await api.post<Pet>("/api/pets", newPetData);
+      if (response.status === 201) {
+        setPets([...pets, response.data]);
+        setTotalPets(totalPets + 1);
+        setNewPetsCount(newPetsCount + 1);
+      } else {
+        throw new Error(`Failed to add pet. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error adding pet:", err);
+      setError(
+        `An error occurred while adding the pet: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditPet = async (formData: FormData) => {
+    if (!editingPet) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const updatedPetData = Object.fromEntries(formData);
+      const response = await api.put<Pet>(
+        `/api/pets/${editingPet.id}`,
+        updatedPetData
+      );
+      if (response.status === 200) {
+        setPets(
+          pets.map((pet) => (pet.id === editingPet.id ? response.data : pet))
+        );
+        setEditingPet(null);
+      } else {
+        throw new Error(`Failed to update pet. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error updating pet:", err);
+      setError(
+        `An error occurred while updating the pet: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeletePet = async (petId: string) => {
+    if (!confirm("Are you sure you want to delete this pet?")) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.delete(`/api/pets/${petId}`);
+      if (response.status === 200) {
+        setPets(pets.filter((pet) => pet.id !== petId));
+        setTotalPets(totalPets - 1);
+      } else {
+        throw new Error(`Failed to delete pet. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error deleting pet:", err);
+      setError(
+        `An error occurred while deleting the pet: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -1654,9 +1732,9 @@ export function AdminDashboard() {
                                         }`}
                                       />
                                       <AvatarFallback>
-                                        {owner.firstName[0]}
+                                        {owner.firstName?.charAt(0)}
                                         {owner.lastName
-                                          ? owner.lastName[0]
+                                          ? owner.lastName?.charAt(0)
                                           : ""}
                                       </AvatarFallback>
                                     </Avatar>
@@ -1712,7 +1790,9 @@ export function AdminDashboard() {
                                             <Input
                                               id="editFirstName"
                                               name="firstName"
-                                              defaultValue={owner.firstName}
+                                              defaultValue={
+                                                owner.firstName as string
+                                              }
                                               required
                                             />
                                           </div>
@@ -1833,31 +1913,32 @@ export function AdminDashboard() {
                             <DialogHeader>
                               <DialogTitle>Add New Pet</DialogTitle>
                             </DialogHeader>
-                            {/* Add pet form */}
-                            <form className="space-y-4">
+                            <form
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                handleAddPet(
+                                  new FormData(e.target as HTMLFormElement)
+                                );
+                              }}
+                              className="space-y-4"
+                            >
                               <div>
                                 <label
-                                  htmlFor="petName"
+                                  htmlFor="name"
                                   className="block text-sm font-medium text-gray-700"
                                 >
                                   Pet Name
                                 </label>
-                                <Input
-                                  id="petName"
-                                  placeholder="Enter pet name"
-                                />
+                                <Input id="name" name="name" required />
                               </div>
                               <div>
                                 <label
-                                  htmlFor="petType"
+                                  htmlFor="type"
                                   className="block text-sm font-medium text-gray-700"
                                 >
                                   Pet Type
                                 </label>
-                                <Input
-                                  id="petType"
-                                  placeholder="Enter pet type"
-                                />
+                                <Input id="type" name="type" required />
                               </div>
                               <div>
                                 <label
@@ -1866,77 +1947,211 @@ export function AdminDashboard() {
                                 >
                                   Breed
                                 </label>
-                                <Input id="breed" placeholder="Enter breed" />
+                                <Input id="breed" name="breed" />
                               </div>
                               <div>
                                 <label
-                                  htmlFor="owner"
+                                  htmlFor="gender"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Owner
+                                  Gender
                                 </label>
-                                <Input
-                                  id="owner"
-                                  placeholder="Enter owner name"
-                                />
+                                <Input id="gender" name="gender" />
                               </div>
                               <div>
                                 <label
-                                  htmlFor="age"
+                                  htmlFor="ownerid"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Age
+                                  Owner ID
                                 </label>
-                                <Input
-                                  id="age"
-                                  type="number"
-                                  placeholder="Enter age"
-                                />
+                                <Input id="ownerid" name="ownerid" required />
                               </div>
                               <Button type="submit">Add Pet</Button>
                             </form>
                           </DialogContent>
                         </Dialog>
                       </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Breed</TableHead>
-                            <TableHead>Owner</TableHead>
-                            <TableHead>Gender</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {pets.map((pet) => (
-                            <TableRow key={pet.id}>
-                              <TableCell>{pet.name}</TableCell>
-                              <TableCell>{pet.type}</TableCell>
-                              <TableCell>{pet.breed}</TableCell>
-                              <TableCell>{pet.owner}</TableCell>
-                              <TableCell>{pet.gender}</TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="mr-2"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deletePets(pet.id)}
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
+                      {isLoading ? (
+                        <div className="flex justify-center items-center h-32">
+                          <p className="text-lg text-gray-500">
+                            Loading pets...
+                          </p>
+                        </div>
+                      ) : error ? (
+                        <div
+                          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                          role="alert"
+                        >
+                          <strong className="font-bold">Error:</strong>
+                          <span className="block sm:inline"> {error}</span>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Breed</TableHead>
+                              <TableHead>Owner</TableHead>
+                              <TableHead>Gender</TableHead>
+                              <TableHead>Actions</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {pets.map((pet) => (
+                              <TableRow key={pet.id}>
+                                <TableCell>{pet.name}</TableCell>
+                                <TableCell>{pet.type}</TableCell>
+                                <TableCell>{pet.breed}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-3">
+                                    <Avatar>
+                                      <AvatarImage
+                                        src={
+                                          pet.owner?.profilePicture ||
+                                          "/placeholder-user.jpg"
+                                        }
+                                        alt={`${
+                                          pet.owner?.firstName || "Unknown"
+                                        } ${pet.owner?.lastName || "Owner"}`}
+                                      />
+                                      <AvatarFallback>
+                                        {pet.owner?.firstName?.[0] || ""}
+                                        {pet.owner?.lastName?.[0] || ""}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span>
+                                      {pet.owner
+                                        ? `${pet.owner.firstName || ""} ${
+                                            pet.owner.lastName || ""
+                                          }`.trim() || "Unnamed Owner"
+                                        : "No Owner"}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>{pet.gender}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => setEditingPet(pet)}
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Edit pet
+                                          </span>
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>Edit Pet</DialogTitle>
+                                        </DialogHeader>
+                                        <form
+                                          onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(
+                                              e.currentTarget
+                                            );
+                                            formData.append("id", pet.id);
+                                            handleEditPet(formData);
+                                          }}
+                                          className="space-y-4"
+                                        >
+                                          <div>
+                                            <label
+                                              htmlFor="editName"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Pet Name
+                                            </label>
+                                            <Input
+                                              id="editName"
+                                              name="name"
+                                              defaultValue={pet.name}
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editType"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Pet Type
+                                            </label>
+                                            <Input
+                                              id="editType"
+                                              name="type"
+                                              defaultValue={pet.type}
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editBreed"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Breed
+                                            </label>
+                                            <Input
+                                              id="editBreed"
+                                              name="breed"
+                                              defaultValue={pet.breed || ""}
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editGender"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Gender
+                                            </label>
+                                            <Input
+                                              id="editGender"
+                                              name="gender"
+                                              defaultValue={pet.gender || ""}
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editOwnerid"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Owner ID
+                                            </label>
+                                            <Input
+                                              id="editOwnerid"
+                                              name="ownerid"
+                                              defaultValue={pet.ownerid}
+                                              required
+                                            />
+                                          </div>
+                                          <Button type="submit">
+                                            Update Pet
+                                          </Button>
+                                        </form>
+                                      </DialogContent>
+                                    </Dialog>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDeletePet(pet.id)}
+                                    >
+                                      <Trash className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Delete pet
+                                      </span>
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
