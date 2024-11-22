@@ -115,7 +115,7 @@ export function AppointmentDialog({
       setIsLoading(true);
       setError(null);
       try {
-        const response = await api.get<Owner>(`/api/owners/${ownerId}`);
+        const response = await api.get<Owner>(`/api/profiles/${ownerId}`);
         setOwner(response.data);
       } catch (err) {
         console.error(err);

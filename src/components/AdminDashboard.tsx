@@ -15,6 +15,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -85,6 +93,7 @@ interface Owner {
   createdAt: Date;
   contact: string;
   pets: Pet[];
+  email: string;
 }
 
 interface Pet {
@@ -157,7 +166,8 @@ interface Notification {
   message: string;
   time: string;
   read: boolean;
-  ownerName: string;
+  owner: Owner;
+  created_at: string;
 }
 
 type Services =
@@ -213,6 +223,12 @@ export function AdminDashboard() {
   const [totalPets, setTotalPets] = useState(0);
   const [newPetsCount, setNewPetsCount] = useState(0);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  // const [deletingNotificationId, setDeletingNotificationId] = useState<
+  //   number | null
+  // >(null);
+  const [editingNotification, setEditingNotification] =
+    useState<Notification | null>(null);
   const [editingAppointment, setEditingAppointment] =
     useState<Appointment | null>(null);
 
@@ -234,6 +250,7 @@ export function AdminDashboard() {
     fetchAppointments();
     fetchOwners();
     fetchPets();
+    fetchNotifications();
   }, []);
 
   const fetchAppointments = async () => {
@@ -262,7 +279,7 @@ export function AdminDashboard() {
       const newAppointment: Appointment = {
         ...response.data,
         // pet: {
-        //   id: response.data.petId,
+        //   id: response.data.id,
         //   name: newAppointmentData.petName as string,
         //   type: newAppointmentData.petType as string,
         // },
@@ -539,6 +556,127 @@ export function AdminDashboard() {
     }
   };
 
+  const fetchNotifications = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.get<Notification[]>("/api/notifications");
+      setNotifications(response.data);
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while fetching notifications");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddNotification = async (formData: FormData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const newNotificationData = {
+        title: formData.get("title") as string,
+        message: formData.get("message") as string,
+        ownerId: formData.get("ownerId") as string,
+      };
+      const response = await api.post<Notification>(
+        "/api/notifications",
+        newNotificationData
+      );
+      setNotifications([...notifications, response.data]);
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while adding the notification");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditNotification = async (formData: FormData) => {
+    if (!editingNotification) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const updatedNotificationData = {
+        title: formData.get("title") as string,
+        message: formData.get("message") as string,
+      };
+      const response = await api.put<Notification>(
+        `/api/notifications/${editingNotification.id}`,
+        updatedNotificationData
+      );
+      setNotifications(
+        notifications.map((notification) =>
+          notification.id === editingNotification.id
+            ? response.data
+            : notification
+        )
+      );
+      setEditingNotification(null);
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while updating the notification");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteNotification = async (id: number) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.delete(`/api/notifications/${id}`);
+      setNotifications(
+        notifications.filter((notification) => notification.id !== id)
+      );
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while deleting the notification");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return "Invalid Date";
+    }
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZoneName: "short",
+    }).format(date);
+  };
+
+  // const markAsRead = async (id: number) => {
+  //   try {
+  //     const response = await fetch(`/api/notifications/${id}`, {
+  //       method: "PATCH",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ read: true }),
+  //     });
+  //     if (!response.ok) {
+  //       throw new Error("Failed to mark notification as read");
+  //     }
+  //     setNotifications(
+  //       notifications.map((notification) =>
+  //         notification.id === id
+  //           ? { ...notification, read: true }
+  //           : notification
+  //       )
+  //     );
+  //   } catch (error) {
+  //     console.error("Error marking notification as read:", error);
+  //   }
+  // };
+
   const [messages] = useState<Message[]>([
     {
       id: 1,
@@ -661,32 +799,32 @@ export function AdminDashboard() {
     },
   ]);
 
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      title: "New Appointment",
-      message: "You have a new appointment request",
-      time: "5 min ago",
-      read: false,
-      ownerName: "Christian Angelo Juan",
-    },
-    {
-      id: 2,
-      title: "Medication Reminder",
-      message: "Don't forget to administer Max's medication",
-      time: "1 hour ago",
-      read: false,
-      ownerName: "Jefferson Garcia",
-    },
-    {
-      id: 3,
-      title: "System Update",
-      message: "The system will undergo maintenance tonight",
-      time: "2 hours ago",
-      read: true,
-      ownerName: "System",
-    },
-  ]);
+  // const [notifications, setNotifications] = useState<Notification[]>([
+  //   {
+  //     id: 1,
+  //     title: "New Appointment",
+  //     message: "You have a new appointment request",
+  //     time: "5 min ago",
+  //     read: false,
+  //     ownerName: "Christian Angelo Juan",
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "Medication Reminder",
+  //     message: "Don't forget to administer Max's medication",
+  //     time: "1 hour ago",
+  //     read: false,
+  //     ownerName: "Jefferson Garcia",
+  //   },
+  //   {
+  //     id: 3,
+  //     title: "System Update",
+  //     message: "The system will undergo maintenance tonight",
+  //     time: "2 hours ago",
+  //     read: true,
+  //     ownerName: "System",
+  //   },
+  // ]);
 
   const handleNavClick = (tab: string) => {
     setActiveTab(tab.toLowerCase());
@@ -727,26 +865,26 @@ export function AdminDashboard() {
     }
   };
 
-  const markNotificationAsRead = (id: number) => {
-    setNotifications(
-      notifications.map((notification) =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
-  };
-  const addNotification = (
-    newNotification: Omit<Notification, "id" | "read">
-  ) => {
-    setNotifications([
-      ...notifications,
-      { ...newNotification, id: notifications.length + 1, read: false },
-    ]);
-  };
-  const deleteNotification = (id: number) => {
-    setNotifications(
-      notifications.filter((notification) => notification.id !== id)
-    );
-  };
+  // const markNotificationAsRead = (id: number) => {
+  //   setNotifications(
+  //     notifications.map((notification) =>
+  //       notification.id === id ? { ...notification, read: true } : notification
+  //     )
+  //   );
+  // };
+  // const addNotification = (
+  //   newNotification: Omit<Notification, "id" | "read">
+  // ) => {
+  //   setNotifications([
+  //     ...notifications,
+  //     { ...newNotification, id: notifications.length + 1, read: false },
+  //   ]);
+  // };
+  // const deleteNotification = (id: number) => {
+  //   setNotifications(
+  //     notifications.filter((notification) => notification.id !== id)
+  //   );
+  // };
 
   const getAccessibleTabs = () => {
     const commonTabs = [
@@ -1341,8 +1479,8 @@ export function AdminDashboard() {
                                   {appointment.owner?.firstName}{" "}
                                   {appointment.owner?.lastName}
                                 </TableCell>
-                                <TableCell>{appointment.pet.name}</TableCell>
-                                <TableCell>{appointment.pet.type}</TableCell>
+                                <TableCell>{appointment.petName}</TableCell>
+                                <TableCell>{appointment.petType}</TableCell>
                                 <TableCell>{appointment.date}</TableCell>
                                 <TableCell>{appointment.time}</TableCell>
                                 <TableCell>{appointment.services}</TableCell>
@@ -2160,7 +2298,9 @@ export function AdminDashboard() {
               <TabsContent value="notifications">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle>Notifications</CardTitle>
+                    <CardTitle className="text-2xl font-bold">
+                      Notifications
+                    </CardTitle>
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button>
@@ -2175,14 +2315,9 @@ export function AdminDashboard() {
                         <form
                           onSubmit={(e) => {
                             e.preventDefault();
-                            const formData = new FormData(e.currentTarget);
-                            addNotification({
-                              title: formData.get("title") as string,
-                              ownerName: formData.get("ownerName") as string, // Add this line
-                              message: formData.get("message") as string,
-                              time: "Just now",
-                            });
-                            e.currentTarget.reset();
+                            handleAddNotification(
+                              new FormData(e.currentTarget)
+                            );
                           }}
                           className="space-y-4"
                         >
@@ -2193,26 +2328,7 @@ export function AdminDashboard() {
                             >
                               Title
                             </label>
-                            <Input
-                              id="title"
-                              name="title"
-                              placeholder="Enter notification title"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label
-                              htmlFor="ownerName"
-                              className="block text-sm font-medium"
-                            >
-                              Owner Name
-                            </label>
-                            <Input
-                              id="ownerName"
-                              name="ownerName"
-                              placeholder="Enter owner name"
-                              required
-                            />
+                            <Input id="title" name="title" required />
                           </div>
                           <div>
                             <label
@@ -2221,12 +2337,27 @@ export function AdminDashboard() {
                             >
                               Message
                             </label>
-                            <Input
-                              id="message"
-                              name="message"
-                              placeholder="Enter notification message"
-                              required
-                            />
+                            <Input id="message" name="message" required />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="ownerId"
+                              className="block text-sm font-medium"
+                            >
+                              Owner
+                            </label>
+                            <Select name="ownerId" required>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select an owner" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {owners.map((owner) => (
+                                  <SelectItem key={owner.id} value={owner.id}>
+                                    {owner.firstName} {owner.lastName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                           <Button type="submit">Add Notification</Button>
                         </form>
@@ -2234,55 +2365,174 @@ export function AdminDashboard() {
                     </Dialog>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`p-4 rounded-lg border ${
-                            !notification.read ? "bg-muted" : ""
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="font-medium">
-                                {notification.title}
-                              </span>
-                              <p className="text-sm text-muted-foreground">
-                                Owner: {notification.ownerName}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() =>
-                                deleteNotification(notification.id)
-                              }
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {notification.message}
-                          </p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-muted-foreground">
-                              {notification.time}
-                            </span>
-                            {!notification.read && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  markNotificationAsRead(notification.id)
-                                }
-                              >
-                                <Check className="h-4 w-4 mr-1" /> Mark as read
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    {isLoading ? (
+                      <div className="flex justify-center items-center h-32">
+                        <p className="text-lg text-gray-500">
+                          Loading notifications...
+                        </p>
+                      </div>
+                    ) : error ? (
+                      <div
+                        className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                        role="alert"
+                      >
+                        <strong className="font-bold">Error:</strong>
+                        <span className="block sm:inline"> {error}</span>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Owner</TableHead>
+                            <TableHead>Title</TableHead>
+                            <TableHead>Message</TableHead>
+                            <TableHead>Created At</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {notifications.map((notification) => (
+                            <TableRow key={notification.id}>
+                              <TableCell>
+                                <div className="flex items-center space-x-3">
+                                  <Avatar>
+                                    <AvatarImage
+                                      src={
+                                        notification.owner.profilePicture ||
+                                        undefined
+                                      }
+                                      alt={`${notification.owner.firstName} ${notification.owner.lastName}`}
+                                    />
+                                    <AvatarFallback>
+                                      {notification.owner.firstName?.[0]}
+                                      {notification.owner.lastName?.[0]}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span>
+                                    {notification.owner.firstName}{" "}
+                                    {notification.owner.lastName}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>{notification.title}</TableCell>
+                              <TableCell>{notification.message}</TableCell>
+                              <TableCell>
+                                {formatDate(notification.created_at)}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  <Dialog>
+                                    <DialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() =>
+                                          setEditingNotification(notification)
+                                        }
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                        <span className="sr-only">
+                                          Edit notification
+                                        </span>
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>
+                                          Edit Notification
+                                        </DialogTitle>
+                                      </DialogHeader>
+                                      <form
+                                        onSubmit={(e) => {
+                                          e.preventDefault();
+                                          handleEditNotification(
+                                            new FormData(e.currentTarget)
+                                          );
+                                        }}
+                                        className="space-y-4"
+                                      >
+                                        <div>
+                                          <label
+                                            htmlFor="editTitle"
+                                            className="block text-sm font-medium"
+                                          >
+                                            Title
+                                          </label>
+                                          <Input
+                                            id="editTitle"
+                                            name="title"
+                                            defaultValue={
+                                              editingNotification?.title
+                                            }
+                                            required
+                                          />
+                                        </div>
+                                        <div>
+                                          <label
+                                            htmlFor="editMessage"
+                                            className="block text-sm font-medium"
+                                          >
+                                            Message
+                                          </label>
+                                          <Input
+                                            id="editMessage"
+                                            name="message"
+                                            defaultValue={
+                                              editingNotification?.message
+                                            }
+                                            required
+                                          />
+                                        </div>
+                                        <Button type="submit">
+                                          Update Notification
+                                        </Button>
+                                      </form>
+                                    </DialogContent>
+                                  </Dialog>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="icon">
+                                        <Trash className="h-4 w-4" />
+                                        <span className="sr-only">
+                                          Delete notification
+                                        </span>
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                          Are you absolutely sure?
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          This action cannot be undone. This
+                                          will permanently delete the
+                                          notification and remove it from our
+                                          servers.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>
+                                          Cancel
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() =>
+                                            handleDeleteNotification(
+                                              notification.id
+                                            )
+                                          }
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
