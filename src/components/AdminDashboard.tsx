@@ -15,6 +15,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,13 +76,14 @@ interface Appointment {
   ownerId: string;
   date: string;
   time: string;
+  services: string;
   status: "confirmed" | "cancelled" | "completed" | "pending";
   notes: string | null;
-  pet: Pet;
-  createdAt: string;
+  petName: string;
+  petType: string;
   owner: Owner;
+  pet: Pet;
 }
-
 interface Owner {
   id: string;
   profilePicture: string | null;
@@ -73,6 +93,7 @@ interface Owner {
   createdAt: Date;
   contact: string;
   pets: Pet[];
+  email: string;
 }
 
 interface Pet {
@@ -82,7 +103,7 @@ interface Pet {
   breed: string | null;
   bio: string;
   gender: string | null;
-  owner: string;
+  owner: Owner;
   profile: string | null;
   ownerid: string;
   created_at: string;
@@ -145,10 +166,45 @@ interface Notification {
   message: string;
   time: string;
   read: boolean;
-  ownerName: string;
+  owner: Owner;
+  created_at: string;
 }
 
+type Services =
+  | "Check Up"
+  | "Vaccination"
+  | "Pet Grooming"
+  | "Confinement"
+  | "Dental Cleaning"
+  | "Laboratory"
+  | "Pet Boarding"
+  | "Surgery"
+  | "Ultrasound"
+  | "Laser Therapy";
 
+type AppointmentStatus = "confirmed" | "cancelled" | "completed" | "pending";
+
+const petTypeOptions = ["cat", "dog", "other"];
+
+const servicesOptions: Services[] = [
+  "Check Up",
+  "Vaccination",
+  "Pet Grooming",
+  "Confinement",
+  "Dental Cleaning",
+  "Laboratory",
+  "Pet Boarding",
+  "Surgery",
+  "Ultrasound",
+  "Laser Therapy",
+];
+
+const statusOptions: AppointmentStatus[] = [
+  "confirmed",
+  "cancelled",
+  "completed",
+  "pending",
+];
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -159,136 +215,467 @@ export function AdminDashboard() {
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [owners, setOwners] = useState<Owner[]>([]);
+  const [editingOwner, setEditingOwner] = useState<Owner | null>(null);
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [editingPet, setEditingPet] = useState<Pet | null>(null);
+  const [totalPets, setTotalPets] = useState(0);
+  const [newPetsCount, setNewPetsCount] = useState(0);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  // const [deletingNotificationId, setDeletingNotificationId] = useState<
+  //   number | null
+  // >(null);
+  const [editingNotification, setEditingNotification] =
+    useState<Notification | null>(null);
+  const [editingAppointment, setEditingAppointment] =
+    useState<Appointment | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [appointmentsResponse, ownersResponse] = await Promise.all([
-          api.get<Appointment[]>("/api/appointments"),
-          api.get<Owner[]>("/api/profiles"),
-        ]);
-        setAppointments(appointmentsResponse.data);
-        setOwners(ownersResponse.data);
-      } catch (err) {
-        console.error(err);
-        setError("An error occurred while fetching data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const timeOptions = [
+    "9:00 AM - 10:00 AM",
+    "10:00 AM - 11:00 AM",
+    "11:00 AM - 12:00 PM",
+    "12:00 PM - 1:00 PM",
+    "1:00 PM - 2:00 PM",
+    "2:00 PM - 3:00 PM",
+    "3:00 PM - 4:00 PM",
+  ];
 
-    fetchData();
+  useEffect(() => {
+    fetchAppointments();
+    fetchOwners();
+    fetchPets();
+    fetchNotifications();
   }, []);
 
-  const handleDeleteAppointment = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this appointment?")) return
-    setIsLoading(true)
-    setError(null)
+  const fetchAppointments = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      await api.delete(`/api/appointments/${id}`)
-      setAppointments(appointments.filter(appointment => appointment.id !== id))
+      const response = await api.get<Appointment[]>("/api/appointments");
+      setAppointments(response.data);
     } catch (err) {
-      console.error(err)
-      setError("An error occurred while deleting the appointment")
+      console.error(err);
+      setError("An error occurred while fetching appointments");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleAddAppointment = async (formData: FormData) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const response = await api.post(
+      const newAppointmentData = Object.fromEntries(formData);
+      const response = await api.post<Appointment>(
         "/api/appointments",
-        Object.fromEntries(formData)
+        newAppointmentData
       );
-      const newAppointment = response.data as Appointment;
+      const newAppointment: Appointment = {
+        ...response.data,
+        // pet: {
+        //   id: response.data.id,
+        //   name: newAppointmentData.petName as string,
+        //   type: newAppointmentData.petType as string,
+        // },
+      };
       setAppointments([...appointments, newAppointment]);
     } catch (err) {
       console.error(err);
       setError("An error occurred while adding the appointment");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleEditAppointment = async (formData: FormData) => {
-    if (!editingAppointment) return
-    setIsLoading(true)
-    setError(null)
+    if (!editingAppointment) return;
+    setIsLoading(true);
+    setError(null);
     try {
-      const response = await api.put(`/api/appointments/${editingAppointment.id}`, Object.fromEntries(formData))
-      const updatedAppointment = response.data as Appointment
-      setAppointments(appointments.map(app => app.id === updatedAppointment.id ? updatedAppointment : app))
-      setEditingAppointment(null)
+      const updatedAppointmentData = Object.fromEntries(formData);
+      const response = await api.put<Appointment>(
+        `/api/appointments/${editingAppointment.id}`,
+        updatedAppointmentData
+      );
+      if (response.status === 200) {
+        const updatedAppointment: Appointment = {
+          ...response.data,
+          // pet: {
+          //   id: response.data.petId,
+          //   name: updatedAppointmentData.petName as string,
+          //   type: updatedAppointmentData.petType as string,
+          // },
+        };
+        setAppointments(
+          appointments.map((app) =>
+            app.id === editingAppointment.id ? updatedAppointment : app
+          )
+        );
+        setEditingAppointment(null);
+        setIsEditDialogOpen(false);
+      } else {
+        throw new Error(
+          `Failed to update appointment. Status: ${response.status}`
+        );
+      }
     } catch (err) {
-      console.error(err)
-      setError("An error occurred while updating the appointment")
+      console.error("Error updating appointment:", err);
+      setError(
+        `An error occurred while updating the appointment: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const [owners, setOwners] = useState<Owner[]>([]);
+  const handleDeleteAppointment = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this appointment?")) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.delete(`/api/appointments/${id}`);
+      setAppointments(
+        appointments.filter((appointment) => appointment.id !== id)
+      );
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while deleting the appointment");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const fetchOwner = async () => {
+  const fetchOwners = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const response = await api.get<Owner[]>("/api/profiles");
-      setOwners(response.data);
-    } catch (err) {
-      console.log(err);
-    }
-  };
-  useEffect(() => {
-    fetchOwner();
-  }, []);
-
-  const deleteOwner = async (ownerId: string) => {
-    try {
-      await api.delete(`/api/profiles/${ownerId}`);
-      fetchOwner(); // Refresh the list of owners
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const [pets, setPets] = useState<Pet[]>([]);
-  const [totalPets, setTotalPets] = useState(0);
-  const [newPetsCount, setNewPetsCount] = useState(0);
-
-  useEffect(() => {
-    const fetchPets = async () => {
-      try {
-        const response = await api.get<Pet[]>("/api/pets");
-        setPets(response.data);
-        setTotalPets(response.data.length);
-        const lastHour = new Date(Date.now() - 60 * 60 * 1000); // 1 hour in milliseconds
-        const recentPets = response.data.filter((pet) => {
-          const petCreatedAt = new Date(pet.created_at);
-          return petCreatedAt > lastHour;
-        });
-        setNewPetsCount(recentPets.length);
-      } catch (err) {
-        console.log(err);
+      if (response.status === 200) {
+        setOwners(response.data);
+      } else {
+        throw new Error(`Failed to fetch owners. Status: ${response.status}`);
       }
-    };
-
-    fetchPets();
-  }, []);
-
-  const deletePets = async (petId: string) => {
-    try {
-      await api.delete(`/api/pets/${petId}`);
-      fetchOwner(); // Refresh the list of owners
     } catch (err) {
-      console.log(err);
+      console.error("Error fetching owners:", err);
+      setError(
+        `An error occurred while fetching owners: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  const handleAddOwner = async (formData: FormData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const newOwnerData = Object.fromEntries(formData);
+      const response = await api.post<Owner>("/api/profiles", newOwnerData);
+      if (response.status === 201) {
+        setOwners([...owners, response.data]);
+      } else {
+        throw new Error(`Failed to add owner. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error adding owner:", err);
+      setError(
+        `An error occurred while adding the owner: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditOwner = async (formData: FormData) => {
+    if (!editingOwner) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const updatedOwnerData = Object.fromEntries(formData);
+      const response = await api.put<Owner>(
+        `/api/profiles/${editingOwner.id}`,
+        updatedOwnerData
+      );
+      if (response.status === 200) {
+        setOwners(
+          owners.map((owner) =>
+            owner.id === editingOwner.id ? response.data : owner
+          )
+        );
+        setEditingOwner(null);
+      } else {
+        throw new Error(`Failed to update owner. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error updating owner:", err);
+      setError(
+        `An error occurred while updating the owner: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteOwner = async (ownerId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.delete(`/api/profiles/${ownerId}`);
+      if (response.status === 200) {
+        setOwners(owners.filter((owner) => owner.id !== ownerId));
+      } else {
+        throw new Error(`Failed to delete owner. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error deleting owner:", err);
+      setError(
+        `An error occurred while deleting the owner: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchPets = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.get<Pet[]>("/api/pets");
+      setPets(response.data);
+      setTotalPets(response.data.length);
+      const lastHour = new Date(Date.now() - 60 * 60 * 1000);
+      const recentPets = response.data.filter((pet) => {
+        const petCreatedAt = new Date(pet.created_at);
+        return petCreatedAt > lastHour;
+      });
+      setNewPetsCount(recentPets.length);
+    } catch (err) {
+      console.error("Error fetching pets:", err);
+      setError(
+        `An error occurred while fetching pets: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddPet = async (formData: FormData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const newPetData = Object.fromEntries(formData);
+      const response = await api.post<Pet>("/api/pets", newPetData);
+      if (response.status === 201) {
+        setPets([...pets, response.data]);
+        setTotalPets(totalPets + 1);
+        setNewPetsCount(newPetsCount + 1);
+      } else {
+        throw new Error(`Failed to add pet. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error adding pet:", err);
+      setError(
+        `An error occurred while adding the pet: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditPet = async (formData: FormData) => {
+    if (!editingPet) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const updatedPetData = Object.fromEntries(formData);
+      const response = await api.put<Pet>(
+        `/api/pets/${editingPet.id}`,
+        updatedPetData
+      );
+      if (response.status === 200) {
+        setPets(
+          pets.map((pet) => (pet.id === editingPet.id ? response.data : pet))
+        );
+        setEditingPet(null);
+      } else {
+        throw new Error(`Failed to update pet. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error updating pet:", err);
+      setError(
+        `An error occurred while updating the pet: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeletePet = async (petId: string) => {
+    if (!confirm("Are you sure you want to delete this pet?")) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.delete(`/api/pets/${petId}`);
+      if (response.status === 200) {
+        setPets(pets.filter((pet) => pet.id !== petId));
+        setTotalPets(totalPets - 1);
+      } else {
+        throw new Error(`Failed to delete pet. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error deleting pet:", err);
+      setError(
+        `An error occurred while deleting the pet: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.get<Notification[]>("/api/notifications");
+      setNotifications(response.data);
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while fetching notifications");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddNotification = async (formData: FormData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const newNotificationData = {
+        title: formData.get("title") as string,
+        message: formData.get("message") as string,
+        ownerId: formData.get("ownerId") as string,
+      };
+      const response = await api.post<Notification>(
+        "/api/notifications",
+        newNotificationData
+      );
+      setNotifications([...notifications, response.data]);
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while adding the notification");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditNotification = async (formData: FormData) => {
+    if (!editingNotification) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const updatedNotificationData = {
+        title: formData.get("title") as string,
+        message: formData.get("message") as string,
+      };
+      const response = await api.put<Notification>(
+        `/api/notifications/${editingNotification.id}`,
+        updatedNotificationData
+      );
+      setNotifications(
+        notifications.map((notification) =>
+          notification.id === editingNotification.id
+            ? response.data
+            : notification
+        )
+      );
+      setEditingNotification(null);
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while updating the notification");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteNotification = async (id: number) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.delete(`/api/notifications/${id}`);
+      setNotifications(
+        notifications.filter((notification) => notification.id !== id)
+      );
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred while deleting the notification");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return "Invalid Date";
+    }
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZoneName: "short",
+    }).format(date);
+  };
+
+  // const markAsRead = async (id: number) => {
+  //   try {
+  //     const response = await fetch(`/api/notifications/${id}`, {
+  //       method: "PATCH",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ read: true }),
+  //     });
+  //     if (!response.ok) {
+  //       throw new Error("Failed to mark notification as read");
+  //     }
+  //     setNotifications(
+  //       notifications.map((notification) =>
+  //         notification.id === id
+  //           ? { ...notification, read: true }
+  //           : notification
+  //       )
+  //     );
+  //   } catch (error) {
+  //     console.error("Error marking notification as read:", error);
+  //   }
+  // };
 
   const [messages] = useState<Message[]>([
     {
@@ -412,32 +799,32 @@ export function AdminDashboard() {
     },
   ]);
 
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      title: "New Appointment",
-      message: "You have a new appointment request",
-      time: "5 min ago",
-      read: false,
-      ownerName: "Christian Angelo Juan",
-    },
-    {
-      id: 2,
-      title: "Medication Reminder",
-      message: "Don't forget to administer Max's medication",
-      time: "1 hour ago",
-      read: false,
-      ownerName: "Jefferson Garcia",
-    },
-    {
-      id: 3,
-      title: "System Update",
-      message: "The system will undergo maintenance tonight",
-      time: "2 hours ago",
-      read: true,
-      ownerName: "System",
-    },
-  ]);
+  // const [notifications, setNotifications] = useState<Notification[]>([
+  //   {
+  //     id: 1,
+  //     title: "New Appointment",
+  //     message: "You have a new appointment request",
+  //     time: "5 min ago",
+  //     read: false,
+  //     ownerName: "Christian Angelo Juan",
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "Medication Reminder",
+  //     message: "Don't forget to administer Max's medication",
+  //     time: "1 hour ago",
+  //     read: false,
+  //     ownerName: "Jefferson Garcia",
+  //   },
+  //   {
+  //     id: 3,
+  //     title: "System Update",
+  //     message: "The system will undergo maintenance tonight",
+  //     time: "2 hours ago",
+  //     read: true,
+  //     ownerName: "System",
+  //   },
+  // ]);
 
   const handleNavClick = (tab: string) => {
     setActiveTab(tab.toLowerCase());
@@ -478,26 +865,26 @@ export function AdminDashboard() {
     }
   };
 
-  const markNotificationAsRead = (id: number) => {
-    setNotifications(
-      notifications.map((notification) =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
-  };
-  const addNotification = (
-    newNotification: Omit<Notification, "id" | "read">
-  ) => {
-    setNotifications([
-      ...notifications,
-      { ...newNotification, id: notifications.length + 1, read: false },
-    ]);
-  };
-  const deleteNotification = (id: number) => {
-    setNotifications(
-      notifications.filter((notification) => notification.id !== id)
-    );
-  };
+  // const markNotificationAsRead = (id: number) => {
+  //   setNotifications(
+  //     notifications.map((notification) =>
+  //       notification.id === id ? { ...notification, read: true } : notification
+  //     )
+  //   );
+  // };
+  // const addNotification = (
+  //   newNotification: Omit<Notification, "id" | "read">
+  // ) => {
+  //   setNotifications([
+  //     ...notifications,
+  //     { ...newNotification, id: notifications.length + 1, read: false },
+  //   ]);
+  // };
+  // const deleteNotification = (id: number) => {
+  //   setNotifications(
+  //     notifications.filter((notification) => notification.id !== id)
+  //   );
+  // };
 
   const getAccessibleTabs = () => {
     const commonTabs = [
@@ -887,15 +1274,17 @@ export function AdminDashboard() {
               </TabsContent>
 
               <TabsContent value="appointments">
-              <Card>
-      <CardHeader>
-        <CardTitle>Appointments</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Appointment List</h3>
-            <Dialog>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Appointments</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-semibold">
+                          Appointment List
+                        </h3>
+                        <Dialog>
                           <DialogTrigger asChild>
                             <Button>
                               <Plus className="mr-2 h-4 w-4" />
@@ -938,25 +1327,32 @@ export function AdminDashboard() {
                               </div>
                               <div>
                                 <label
-                                  htmlFor="petId"
+                                  htmlFor="petName"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Pet
+                                  Pet Name
+                                </label>
+                                <Input id="petName" name="petName" required />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="petType"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Pet Type
                                 </label>
                                 <select
-                                  id="petId"
-                                  name="petId"
+                                  id="petType"
+                                  name="petType"
                                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                                   required
                                 >
-                                  <option value="">Select a pet</option>
-                                  {owners
-                                    .flatMap((owner) => owner.pets)
-                                    .map((pet) => (
-                                      <option key={pet.id} value={pet.id}>
-                                        {pet.name} ({pet.type})
-                                      </option>
-                                    ))}
+                                  {petTypeOptions.map((type) => (
+                                    <option key={type} value={type}>
+                                      {type.charAt(0).toUpperCase() +
+                                        type.slice(1)}
+                                    </option>
+                                  ))}
                                 </select>
                               </div>
                               <div>
@@ -980,12 +1376,38 @@ export function AdminDashboard() {
                                 >
                                   Time
                                 </label>
-                                <Input
+                                <select
                                   id="time"
                                   name="time"
-                                  type="time"
+                                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                                   required
-                                />
+                                >
+                                  {timeOptions.map((option, index) => (
+                                    <option key={index} value={option}>
+                                      {option}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="services"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Services
+                                </label>
+                                <select
+                                  id="services"
+                                  name="services"
+                                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                  required
+                                >
+                                  {servicesOptions.map((service) => (
+                                    <option key={service} value={service}>
+                                      {service}
+                                    </option>
+                                  ))}
+                                </select>
                               </div>
                               <div>
                                 <label
@@ -1000,10 +1422,12 @@ export function AdminDashboard() {
                                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                                   required
                                 >
-                                  <option value="confirmed">Confirmed</option>
-                                  <option value="cancelled">Cancelled</option>
-                                  <option value="completed">Completed</option>
-                                  <option value="pending">Pending</option>
+                                  {statusOptions.map((status) => (
+                                    <option key={status} value={status}>
+                                      {status.charAt(0).toUpperCase() +
+                                        status.slice(1)}
+                                    </option>
+                                  ))}
                                 </select>
                               </div>
                               <div>
@@ -1019,154 +1443,318 @@ export function AdminDashboard() {
                             </form>
                           </DialogContent>
                         </Dialog>
-          </div>
-          {isLoading ? (
-            <p>Loading appointments...</p>
-          ) : error ? (
-            <p className="text-red-500">{error}</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Pet Name</TableHead>
-                  <TableHead>Pet Type</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {appointments.map((appointment) => (
-                  <TableRow key={appointment.id}>
-                    <TableCell>{appointment.owner.firstName} {appointment.owner.lastName}</TableCell>
-                    <TableCell>{appointment.pet.name || "N/A"}</TableCell>
-                    <TableCell>{appointment.pet.type || "N/A"}</TableCell>
-                    <TableCell>{appointment.date}</TableCell>
-                    <TableCell>{appointment.time}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(appointment.status)}`}>
-                        {appointment.status}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                      <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                const appointmentToUpdate = appointments.find(a => a.id === appointment.id);
-                                if (appointmentToUpdate) {
-                                  setEditingAppointment(appointmentToUpdate);
-                                }
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            {editingAppointment && (
-                              <>
-                                <DialogHeader>
-                                  <DialogTitle>Edit Appointment</DialogTitle>
-                                </DialogHeader>
-                                <form onSubmit={(e) => {
-                                  e.preventDefault();
-                                  handleEditAppointment(new FormData(e.currentTarget));
-                                }} className="space-y-4">
-                                  <div>
-                                    <label htmlFor="ownerId" className="block text-sm font-medium text-gray-700">Owner</label>
-                                    <select
-                                      id="ownerId"
-                                      name="ownerId"
-                                      defaultValue={editingAppointment?.ownerId || ''}
-                                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                      required
-                                    >
-                                      <option value="">Select an owner</option>
-                                      {owners.map((owner) => (
-                                        <option key={owner.id} value={owner.id}>
-                                          {owner.firstName} {owner.lastName}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                  <div>
-                                    <label htmlFor="petId" className="block text-sm font-medium text-gray-700">Pet</label>
-                                    <select
-                                      id="petId"
-                                      name="petId"
-                                      defaultValue={editingAppointment?.pet.name || ''}
-                                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                      required
-                                    >
-                                      <option value="">Select a pet</option>
-                                      {owners.flatMap((owner) => owner.pets).map((pet) => (
-                                        <option key={pet.id} value={pet.id}>
-                                          {pet.name} ({pet.type})
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                  <div>
-                                    <label htmlFor="date" className="block text-sm font-medium text-gray-700">Date</label>
-                                    <Input id="date" name="date" type="date" defaultValue={editingAppointment?.date || ''} required />
-                                  </div>
-                                  <div>
-                                    <label htmlFor="time" className="block text-sm font-medium text-gray-700">Time</label>
-                                    <Input id="time" name="time" type="time" defaultValue={editingAppointment?.time || ''} required />
-                                  </div>
-                                  <div>
-                                    <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
-                                    <select
-                                      id="status"
-                                      name="status"
-                                      defaultValue={editingAppointment?.status || ''}
-                                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                      required
-                                    >
-                                      <option value="confirmed">Confirmed</option>
-                                      <option value="cancelled">Cancelled</option>
-                                      <option value="completed">Completed</option>
-                                      <option value="pending">Pending</option>
-                                    </select>
-                                  </div>
-                                  <div>
-                                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes</label>
-                                    <Input id="notes" name="notes" defaultValue={editingAppointment?.notes || ''} />
-                                  </div>
-                                  <Button type="submit">Update Appointment</Button>
-                                </form>
-                              </>
-                            )}
-                          </DialogContent>
-                        </Dialog>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteAppointment(appointment.id)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+                      {isLoading ? (
+                        <div className="flex justify-center items-center h-32">
+                          <p className="text-lg text-gray-500">
+                            Loading appointments...
+                          </p>
+                        </div>
+                      ) : error ? (
+                        <div
+                          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                          role="alert"
+                        >
+                          <strong className="font-bold">Error:</strong>
+                          <span className="block sm:inline"> {error}</span>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Owner</TableHead>
+                              <TableHead>Pet Name</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Time</TableHead>
+                              <TableHead>Services</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {appointments.map((appointment) => (
+                              <TableRow key={appointment.id}>
+                                <TableCell>
+                                  {appointment.owner?.firstName}{" "}
+                                  {appointment.owner?.lastName}
+                                </TableCell>
+                                <TableCell>{appointment.petName}</TableCell>
+                                <TableCell>{appointment.petType}</TableCell>
+                                <TableCell>{appointment.date}</TableCell>
+                                <TableCell>{appointment.time}</TableCell>
+                                <TableCell>{appointment.services}</TableCell>
+                                <TableCell>
+                                  <span
+                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                                      appointment.status
+                                    )}`}
+                                  >
+                                    {appointment.status}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() =>
+                                            setEditingAppointment(appointment)
+                                          }
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Edit appointment
+                                          </span>
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>
+                                            Edit Appointment
+                                          </DialogTitle>
+                                        </DialogHeader>
+                                        {editingAppointment && (
+                                          <form
+                                            onSubmit={(e) => {
+                                              e.preventDefault();
+                                              const formData = new FormData(
+                                                e.currentTarget
+                                              );
+                                              formData.append(
+                                                "id",
+                                                editingAppointment.id
+                                              );
+                                              handleEditAppointment(formData);
+                                            }}
+                                            className="space-y-4"
+                                          >
+                                            <div>
+                                              <label
+                                                htmlFor="ownerId"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Owner
+                                              </label>
+                                              <select
+                                                id="ownerId"
+                                                name="ownerId"
+                                                defaultValue={
+                                                  editingAppointment.ownerId
+                                                }
+                                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                                required
+                                              >
+                                                {owners.map((owner) => (
+                                                  <option
+                                                    key={owner.id}
+                                                    value={owner.id}
+                                                  >
+                                                    {owner.firstName}{" "}
+                                                    {owner.lastName}
+                                                  </option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="petName"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Pet Name
+                                              </label>
+                                              <Input
+                                                id="petName"
+                                                name="petName"
+                                                defaultValue={
+                                                  editingAppointment.pet.name
+                                                }
+                                                required
+                                              />
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="petType"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Pet Type
+                                              </label>
+                                              <select
+                                                id="petType"
+                                                name="petType"
+                                                defaultValue={
+                                                  editingAppointment.pet.type
+                                                }
+                                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                                required
+                                              >
+                                                {petTypeOptions.map((type) => (
+                                                  <option
+                                                    key={type}
+                                                    value={type}
+                                                  >
+                                                    {type
+                                                      .charAt(0)
+                                                      .toUpperCase() +
+                                                      type.slice(1)}
+                                                  </option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="date"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Date
+                                              </label>
+                                              <Input
+                                                id="date"
+                                                name="date"
+                                                type="date"
+                                                defaultValue={
+                                                  editingAppointment.date
+                                                }
+                                                required
+                                              />
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="time"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Time
+                                              </label>
+                                              <select
+                                                id="time"
+                                                name="time"
+                                                defaultValue={
+                                                  editingAppointment.time
+                                                }
+                                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                                required
+                                              >
+                                                {timeOptions.map(
+                                                  (option, index) => (
+                                                    <option
+                                                      key={index}
+                                                      value={option}
+                                                    >
+                                                      {option}
+                                                    </option>
+                                                  )
+                                                )}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="services"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Services
+                                              </label>
+                                              <select
+                                                id="services"
+                                                name="services"
+                                                defaultValue={
+                                                  editingAppointment.services
+                                                }
+                                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                                required
+                                              >
+                                                {servicesOptions.map(
+                                                  (service) => (
+                                                    <option
+                                                      key={service}
+                                                      value={service}
+                                                    >
+                                                      {service}
+                                                    </option>
+                                                  )
+                                                )}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="status"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Status
+                                              </label>
+                                              <select
+                                                id="status"
+                                                name="status"
+                                                defaultValue={
+                                                  editingAppointment.status
+                                                }
+                                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                                required
+                                              >
+                                                {statusOptions.map((status) => (
+                                                  <option
+                                                    key={status}
+                                                    value={status}
+                                                  >
+                                                    {status
+                                                      .charAt(0)
+                                                      .toUpperCase() +
+                                                      status.slice(1)}
+                                                  </option>
+                                                ))}
+                                              </select>
+                                            </div>
+                                            <div>
+                                              <label
+                                                htmlFor="notes"
+                                                className="block text-sm font-medium text-gray-700"
+                                              >
+                                                Notes
+                                              </label>
+                                              <Input
+                                                id="notes"
+                                                name="notes"
+                                                defaultValue={
+                                                  editingAppointment.notes || ""
+                                                }
+                                              />
+                                            </div>
+                                            <Button type="submit">
+                                              Update Appointment
+                                            </Button>
+                                          </form>
+                                        )}
+                                      </DialogContent>
+                                    </Dialog>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() =>
+                                        handleDeleteAppointment(appointment.id)
+                                      }
+                                    >
+                                      <Trash className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Delete appointment
+                                      </span>
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="owners">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Pet Owners</CardTitle>
+                    <CardTitle>Owners</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -1183,30 +1771,49 @@ export function AdminDashboard() {
                             <DialogHeader>
                               <DialogTitle>Add New Owner</DialogTitle>
                             </DialogHeader>
-                            {/* Add owner form */}
-                            <form className="space-y-4">
+                            <form
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                handleAddOwner(
+                                  new FormData(e.target as HTMLFormElement)
+                                );
+                              }}
+                              className="space-y-4"
+                            >
                               <div>
                                 <label
-                                  htmlFor="ownerName"
+                                  htmlFor="firstName"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Owner Name
+                                  First Name
                                 </label>
                                 <Input
-                                  id="ownerName"
-                                  placeholder="Enter owner name"
+                                  id="firstName"
+                                  name="firstName"
+                                  required
                                 />
                               </div>
                               <div>
                                 <label
-                                  htmlFor="pets"
+                                  htmlFor="lastName"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Pets
+                                  Last Name
+                                </label>
+                                <Input id="lastName" name="lastName" />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="email"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Email
                                 </label>
                                 <Input
-                                  id="pets"
-                                  placeholder="Enter pet names (comma separated)"
+                                  id="email"
+                                  name="email"
+                                  type="email"
+                                  required
                                 />
                               </div>
                               <div>
@@ -1216,62 +1823,209 @@ export function AdminDashboard() {
                                 >
                                   Phone
                                 </label>
-                                <Input
-                                  id="phone"
-                                  placeholder="Enter phone number"
-                                />
+                                <Input id="phone" name="phone" type="tel" />
                               </div>
                               <Button type="submit">Add Owner</Button>
                             </form>
                           </DialogContent>
                         </Dialog>
                       </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Pets</TableHead>
-                            <TableHead>Phone</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {owners.map((owner) => (
-                            <TableRow key={owner.id}>
-                              <TableCell>
-                                {owner.firstName}, {owner.middleName}{" "}
-                                {owner.lastName},{" "}
-                              </TableCell>
-                              <TableCell>
-                                {" "}
-                                {owner.pets.map((pet: Pet, index: number) => (
-                                  <span key={index}>
-                                    {pet.name}
-                                    {index < owner.pets.length - 1 ? ", " : ""}
-                                  </span>
-                                ))}
-                              </TableCell>
-                              <TableCell>{owner.contact}</TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="mr-2"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteOwner(owner.id)}
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
+                      {isLoading ? (
+                        <div className="flex justify-center items-center h-32">
+                          <p className="text-lg text-gray-500">
+                            Loading owners...
+                          </p>
+                        </div>
+                      ) : error ? (
+                        <div
+                          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                          role="alert"
+                        >
+                          <strong className="font-bold">Error:</strong>
+                          <span className="block sm:inline"> {error}</span>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Contact</TableHead>
+                              <TableHead>Pets</TableHead>
+                              <TableHead>Actions</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {owners.map((owner) => (
+                              <TableRow key={owner.id}>
+                                <TableCell>
+                                  <div className="flex items-center space-x-3">
+                                    <Avatar>
+                                      <AvatarImage
+                                        src={
+                                          owner.profilePicture ||
+                                          "/placeholder-user.jpg"
+                                        }
+                                        alt={`${owner.firstName} ${
+                                          owner.lastName || ""
+                                        }`}
+                                      />
+                                      <AvatarFallback>
+                                        {owner.firstName?.charAt(0)}
+                                        {owner.lastName
+                                          ? owner.lastName?.charAt(0)
+                                          : ""}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span>
+                                      {owner.firstName} {owner.lastName || ""}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div>{owner.email}</div>
+                                  <div>{owner.contact}</div>
+                                </TableCell>
+                                <TableCell>
+                                  {owner.pets.map((pet) => pet.name).join(", ")}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => setEditingOwner(owner)}
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Edit owner
+                                          </span>
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>Edit Owner</DialogTitle>
+                                        </DialogHeader>
+                                        <form
+                                          onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(
+                                              e.currentTarget
+                                            );
+                                            formData.append("id", owner.id);
+                                            handleEditOwner(formData);
+                                          }}
+                                          className="space-y-4"
+                                        >
+                                          <div>
+                                            <label
+                                              htmlFor="editFirstName"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              First Name
+                                            </label>
+                                            <Input
+                                              id="editFirstName"
+                                              name="firstName"
+                                              defaultValue={
+                                                owner.firstName as string
+                                              }
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editLastName"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Last Name
+                                            </label>
+                                            <Input
+                                              id="editLastName"
+                                              name="lastName"
+                                              defaultValue={
+                                                owner.lastName || ""
+                                              }
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editEmail"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Email
+                                            </label>
+                                            <Input
+                                              id="editEmail"
+                                              name="email"
+                                              type="email"
+                                              defaultValue={owner.email}
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editPhone"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Phone
+                                            </label>
+                                            <Input
+                                              id="editPhone"
+                                              name="phone"
+                                              type="tel"
+                                              defaultValue={owner.contact || ""}
+                                            />
+                                          </div>
+                                          <Button type="submit">
+                                            Update Owner
+                                          </Button>
+                                        </form>
+                                      </DialogContent>
+                                    </Dialog>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                          <Trash className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Delete owner
+                                          </span>
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>
+                                            Are you absolutely sure?
+                                          </AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This action cannot be undone. This
+                                            will permanently delete the owner
+                                            and remove the data from our
+                                            servers.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>
+                                            Cancel
+                                          </AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() =>
+                                              handleDeleteOwner(owner.id)
+                                            }
+                                          >
+                                            Delete
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1297,31 +2051,32 @@ export function AdminDashboard() {
                             <DialogHeader>
                               <DialogTitle>Add New Pet</DialogTitle>
                             </DialogHeader>
-                            {/* Add pet form */}
-                            <form className="space-y-4">
+                            <form
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                handleAddPet(
+                                  new FormData(e.target as HTMLFormElement)
+                                );
+                              }}
+                              className="space-y-4"
+                            >
                               <div>
                                 <label
-                                  htmlFor="petName"
+                                  htmlFor="name"
                                   className="block text-sm font-medium text-gray-700"
                                 >
                                   Pet Name
                                 </label>
-                                <Input
-                                  id="petName"
-                                  placeholder="Enter pet name"
-                                />
+                                <Input id="name" name="name" required />
                               </div>
                               <div>
                                 <label
-                                  htmlFor="petType"
+                                  htmlFor="type"
                                   className="block text-sm font-medium text-gray-700"
                                 >
                                   Pet Type
                                 </label>
-                                <Input
-                                  id="petType"
-                                  placeholder="Enter pet type"
-                                />
+                                <Input id="type" name="type" required />
                               </div>
                               <div>
                                 <label
@@ -1330,77 +2085,211 @@ export function AdminDashboard() {
                                 >
                                   Breed
                                 </label>
-                                <Input id="breed" placeholder="Enter breed" />
+                                <Input id="breed" name="breed" />
                               </div>
                               <div>
                                 <label
-                                  htmlFor="owner"
+                                  htmlFor="gender"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Owner
+                                  Gender
                                 </label>
-                                <Input
-                                  id="owner"
-                                  placeholder="Enter owner name"
-                                />
+                                <Input id="gender" name="gender" />
                               </div>
                               <div>
                                 <label
-                                  htmlFor="age"
+                                  htmlFor="ownerid"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Age
+                                  Owner ID
                                 </label>
-                                <Input
-                                  id="age"
-                                  type="number"
-                                  placeholder="Enter age"
-                                />
+                                <Input id="ownerid" name="ownerid" required />
                               </div>
                               <Button type="submit">Add Pet</Button>
                             </form>
                           </DialogContent>
                         </Dialog>
                       </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Breed</TableHead>
-                            <TableHead>Owner</TableHead>
-                            <TableHead>Gender</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {pets.map((pet) => (
-                            <TableRow key={pet.id}>
-                              <TableCell>{pet.name}</TableCell>
-                              <TableCell>{pet.type}</TableCell>
-                              <TableCell>{pet.breed}</TableCell>
-                              <TableCell>{pet.owner}</TableCell>
-                              <TableCell>{pet.gender}</TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="mr-2"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deletePets(pet.id)}
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
+                      {isLoading ? (
+                        <div className="flex justify-center items-center h-32">
+                          <p className="text-lg text-gray-500">
+                            Loading pets...
+                          </p>
+                        </div>
+                      ) : error ? (
+                        <div
+                          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                          role="alert"
+                        >
+                          <strong className="font-bold">Error:</strong>
+                          <span className="block sm:inline"> {error}</span>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Breed</TableHead>
+                              <TableHead>Owner</TableHead>
+                              <TableHead>Gender</TableHead>
+                              <TableHead>Actions</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {pets.map((pet) => (
+                              <TableRow key={pet.id}>
+                                <TableCell>{pet.name}</TableCell>
+                                <TableCell>{pet.type}</TableCell>
+                                <TableCell>{pet.breed}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-3">
+                                    <Avatar>
+                                      <AvatarImage
+                                        src={
+                                          pet.owner?.profilePicture ||
+                                          "/placeholder-user.jpg"
+                                        }
+                                        alt={`${
+                                          pet.owner?.firstName || "Unknown"
+                                        } ${pet.owner?.lastName || "Owner"}`}
+                                      />
+                                      <AvatarFallback>
+                                        {pet.owner?.firstName?.[0] || ""}
+                                        {pet.owner?.lastName?.[0] || ""}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span>
+                                      {pet.owner
+                                        ? `${pet.owner.firstName || ""} ${
+                                            pet.owner.lastName || ""
+                                          }`.trim() || "Unnamed Owner"
+                                        : "No Owner"}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>{pet.gender}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => setEditingPet(pet)}
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Edit pet
+                                          </span>
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>Edit Pet</DialogTitle>
+                                        </DialogHeader>
+                                        <form
+                                          onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(
+                                              e.currentTarget
+                                            );
+                                            formData.append("id", pet.id);
+                                            handleEditPet(formData);
+                                          }}
+                                          className="space-y-4"
+                                        >
+                                          <div>
+                                            <label
+                                              htmlFor="editName"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Pet Name
+                                            </label>
+                                            <Input
+                                              id="editName"
+                                              name="name"
+                                              defaultValue={pet.name}
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editType"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Pet Type
+                                            </label>
+                                            <Input
+                                              id="editType"
+                                              name="type"
+                                              defaultValue={pet.type}
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editBreed"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Breed
+                                            </label>
+                                            <Input
+                                              id="editBreed"
+                                              name="breed"
+                                              defaultValue={pet.breed || ""}
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editGender"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Gender
+                                            </label>
+                                            <Input
+                                              id="editGender"
+                                              name="gender"
+                                              defaultValue={pet.gender || ""}
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editOwnerid"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Owner ID
+                                            </label>
+                                            <Input
+                                              id="editOwnerid"
+                                              name="ownerid"
+                                              defaultValue={pet.ownerid}
+                                              required
+                                            />
+                                          </div>
+                                          <Button type="submit">
+                                            Update Pet
+                                          </Button>
+                                        </form>
+                                      </DialogContent>
+                                    </Dialog>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDeletePet(pet.id)}
+                                    >
+                                      <Trash className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Delete pet
+                                      </span>
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1409,7 +2298,9 @@ export function AdminDashboard() {
               <TabsContent value="notifications">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle>Notifications</CardTitle>
+                    <CardTitle className="text-2xl font-bold">
+                      Notifications
+                    </CardTitle>
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button>
@@ -1424,14 +2315,9 @@ export function AdminDashboard() {
                         <form
                           onSubmit={(e) => {
                             e.preventDefault();
-                            const formData = new FormData(e.currentTarget);
-                            addNotification({
-                              title: formData.get("title") as string,
-                              ownerName: formData.get("ownerName") as string, // Add this line
-                              message: formData.get("message") as string,
-                              time: "Just now",
-                            });
-                            e.currentTarget.reset();
+                            handleAddNotification(
+                              new FormData(e.currentTarget)
+                            );
                           }}
                           className="space-y-4"
                         >
@@ -1442,26 +2328,7 @@ export function AdminDashboard() {
                             >
                               Title
                             </label>
-                            <Input
-                              id="title"
-                              name="title"
-                              placeholder="Enter notification title"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label
-                              htmlFor="ownerName"
-                              className="block text-sm font-medium"
-                            >
-                              Owner Name
-                            </label>
-                            <Input
-                              id="ownerName"
-                              name="ownerName"
-                              placeholder="Enter owner name"
-                              required
-                            />
+                            <Input id="title" name="title" required />
                           </div>
                           <div>
                             <label
@@ -1470,12 +2337,27 @@ export function AdminDashboard() {
                             >
                               Message
                             </label>
-                            <Input
-                              id="message"
-                              name="message"
-                              placeholder="Enter notification message"
-                              required
-                            />
+                            <Input id="message" name="message" required />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="ownerId"
+                              className="block text-sm font-medium"
+                            >
+                              Owner
+                            </label>
+                            <Select name="ownerId" required>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select an owner" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {owners.map((owner) => (
+                                  <SelectItem key={owner.id} value={owner.id}>
+                                    {owner.firstName} {owner.lastName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                           <Button type="submit">Add Notification</Button>
                         </form>
@@ -1483,55 +2365,174 @@ export function AdminDashboard() {
                     </Dialog>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`p-4 rounded-lg border ${
-                            !notification.read ? "bg-muted" : ""
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="font-medium">
-                                {notification.title}
-                              </span>
-                              <p className="text-sm text-muted-foreground">
-                                Owner: {notification.ownerName}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() =>
-                                deleteNotification(notification.id)
-                              }
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {notification.message}
-                          </p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-muted-foreground">
-                              {notification.time}
-                            </span>
-                            {!notification.read && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  markNotificationAsRead(notification.id)
-                                }
-                              >
-                                <Check className="h-4 w-4 mr-1" /> Mark as read
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    {isLoading ? (
+                      <div className="flex justify-center items-center h-32">
+                        <p className="text-lg text-gray-500">
+                          Loading notifications...
+                        </p>
+                      </div>
+                    ) : error ? (
+                      <div
+                        className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                        role="alert"
+                      >
+                        <strong className="font-bold">Error:</strong>
+                        <span className="block sm:inline"> {error}</span>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Owner</TableHead>
+                            <TableHead>Title</TableHead>
+                            <TableHead>Message</TableHead>
+                            <TableHead>Created At</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {notifications.map((notification) => (
+                            <TableRow key={notification.id}>
+                              <TableCell>
+                                <div className="flex items-center space-x-3">
+                                  <Avatar>
+                                    <AvatarImage
+                                      src={
+                                        notification.owner.profilePicture ||
+                                        undefined
+                                      }
+                                      alt={`${notification.owner.firstName} ${notification.owner.lastName}`}
+                                    />
+                                    <AvatarFallback>
+                                      {notification.owner.firstName?.[0]}
+                                      {notification.owner.lastName?.[0]}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span>
+                                    {notification.owner.firstName}{" "}
+                                    {notification.owner.lastName}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>{notification.title}</TableCell>
+                              <TableCell>{notification.message}</TableCell>
+                              <TableCell>
+                                {formatDate(notification.created_at)}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  <Dialog>
+                                    <DialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() =>
+                                          setEditingNotification(notification)
+                                        }
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                        <span className="sr-only">
+                                          Edit notification
+                                        </span>
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>
+                                          Edit Notification
+                                        </DialogTitle>
+                                      </DialogHeader>
+                                      <form
+                                        onSubmit={(e) => {
+                                          e.preventDefault();
+                                          handleEditNotification(
+                                            new FormData(e.currentTarget)
+                                          );
+                                        }}
+                                        className="space-y-4"
+                                      >
+                                        <div>
+                                          <label
+                                            htmlFor="editTitle"
+                                            className="block text-sm font-medium"
+                                          >
+                                            Title
+                                          </label>
+                                          <Input
+                                            id="editTitle"
+                                            name="title"
+                                            defaultValue={
+                                              editingNotification?.title
+                                            }
+                                            required
+                                          />
+                                        </div>
+                                        <div>
+                                          <label
+                                            htmlFor="editMessage"
+                                            className="block text-sm font-medium"
+                                          >
+                                            Message
+                                          </label>
+                                          <Input
+                                            id="editMessage"
+                                            name="message"
+                                            defaultValue={
+                                              editingNotification?.message
+                                            }
+                                            required
+                                          />
+                                        </div>
+                                        <Button type="submit">
+                                          Update Notification
+                                        </Button>
+                                      </form>
+                                    </DialogContent>
+                                  </Dialog>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="icon">
+                                        <Trash className="h-4 w-4" />
+                                        <span className="sr-only">
+                                          Delete notification
+                                        </span>
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                          Are you absolutely sure?
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          This action cannot be undone. This
+                                          will permanently delete the
+                                          notification and remove it from our
+                                          servers.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>
+                                          Cancel
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() =>
+                                            handleDeleteNotification(
+                                              notification.id
+                                            )
+                                          }
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
