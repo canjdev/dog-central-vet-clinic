@@ -30,41 +30,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import api from "@/config/api";
 import { useNavigate } from "react-router-dom";
 
-// // Mock data for medical and booking history
-// const mockMedicalRecords = [
-//   {
-//     date: "2023-05-15",
-//     treatment: "Annual Checkup",
-//     veterinarian: "Dr. Sarah Johnson",
-//     notes: "All vitals normal. Recommended dental cleaning.",
-//   },
-//   {
-//     date: "2023-07-22",
-//     treatment: "Vaccination",
-//     veterinarian: "Dr. Michael Lee",
-//     notes: "Administered annual vaccines. No adverse reactions.",
-//   },
-//   {
-//     date: "2023-09-10",
-//     treatment: "Dental Cleaning",
-//     veterinarian: "Dr. Sarah Johnson",
-//     notes: "Performed dental cleaning. No complications.",
-//   },
-// ];
-
-// const mockBookingHistory = [
-//   {
-//     date: "2023-10-05",
-//     service: "Grooming",
-//     status: "Completed",
-//   },
-//   {
-//     date: "2023-11-15",
-//     service: "Vaccination",
-//     status: "Upcoming",
-//   },
-// ];
-
 interface Appointment {
   id: string;
   ownerId: string;
@@ -147,44 +112,6 @@ interface Notification {
 //   "pending",
 // ];
 
-// Mock appointment data
-// const mockAppointment: Appointment = {
-//   id: "1",
-//   ownerId: "1",
-//   date: "2023-12-01",
-//   time: "14:00",
-//   status: "confirmed",
-//   notes: "Regular checkup",
-//   pets: [
-//     {
-//       id: "1",
-//       name: "Buddy",
-//       type: "Dog",
-//       breed: "Labrador",
-//       bio: "Friendly and energetic Labrador",
-//       gender: "Male",
-//       owner: "John Doe",
-//       profile: null,
-//       ownerid: "1",
-//       created_at: "2023-01-15T10:00:00Z",
-//     },
-//     {
-//       id: "2",
-//       name: "Whiskers",
-//       type: "Cat",
-//       breed: "Siamese",
-//       bio: "Calm and affectionate Siamese cat",
-//       gender: "Female",
-//       owner: "John Doe",
-//       profile: null,
-//       ownerid: "1",
-//       created_at: "2023-02-20T14:30:00Z",
-//     },
-//   ],
-//   createdAt: "2023-11-15T10:00:00Z",
-//   owner: [],
-// };
-
 export function PetMedicalHistory() {
   const navigate = useNavigate();
   const [owner, setOwner] = useState<Owner | null>(null);
@@ -204,7 +131,7 @@ export function PetMedicalHistory() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.get<Owner>("/api/profiles/me");
+      const response = await api.get<Owner>("/api/users/profile/");
       const loggedInUser = response.data;
       setOwner(loggedInUser);
       await Promise.all([
@@ -223,7 +150,7 @@ export function PetMedicalHistory() {
   const fetchNotifications = async (ownerId: string) => {
     try {
       const response = await api.get<Notification[]>(
-        `/api/notifications/${ownerId}`
+        `/api/notifications/owner/${ownerId}`
       );
       setNotifications(response.data);
     } catch (error) {
@@ -234,7 +161,7 @@ export function PetMedicalHistory() {
   const fetchAppointments = async (ownerId: string) => {
     try {
       const response = await api.get<Appointment[]>(
-        `/api/appointments/${ownerId}`
+        `/api/appointments/owner/${ownerId}`
       );
       setAppointments(response.data);
     } catch (error) {
@@ -244,7 +171,7 @@ export function PetMedicalHistory() {
 
   const fetchPets = async (ownerId: string) => {
     try {
-      const response = await api.get<Pet[]>(`/api/pets/${ownerId}`);
+      const response = await api.get<Pet[]>(`/api/pets/owner/${ownerId}`);
       setPets(response.data);
     } catch (error) {
       console.error("Error fetching pets:", error);
@@ -463,7 +390,7 @@ export function PetMedicalHistory() {
                       <p>Type: {pet.type}</p>
                       <p>Breed: {pet.breed || "Not specified"}</p>
                       <p>Gender: {pet.gender || "Not specified"}</p>
-                      <p>Bio: {pet.bio}</p>
+                      {/* <p>Bio: {pet.bio}</p> */}
                     </div>
                   ))}
                 </ScrollArea>
@@ -492,7 +419,7 @@ export function PetMedicalHistory() {
                     <TableCell>{upcomingAppointment.date}</TableCell>
                     <TableCell>{upcomingAppointment.time}</TableCell>
                     <TableCell>{upcomingAppointment.services}</TableCell>
-                    <TableCell>{upcomingAppointment.petName}</TableCell>
+                    <TableCell>{upcomingAppointment.pet.name}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
