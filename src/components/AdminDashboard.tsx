@@ -70,11 +70,11 @@ import {
 } from "@/components/ui/table";
 import api from "@/config/api";
 
-type UserRole = "admin" | "veterinarian" | "staff";
+// type UserRole = "admin" | "veterinarian" | "staff";
 
-interface UserProfile {
-  role: UserRole;
-}
+// interface UserProfile {
+//   role: UserRole;
+// }
 
 interface Appointment {
   id: string;
@@ -223,7 +223,7 @@ export function AdminDashboard() {
   const [newPetsCount, setNewPetsCount] = useState(0);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  // const [userRole, setUserRole] = useState<UserRole | null>(null);
   // const [deletingNotificationId, setDeletingNotificationId] = useState<
   //   number | null
   // >(null);
@@ -258,7 +258,7 @@ export function AdminDashboard() {
     fetchNotifications();
     fetchVaccinations();
     fetchUsers();
-    fetchUserProfile();
+    // fetchUserProfile();
   }, []);
 
   const fetchAppointments = async () => {
@@ -769,17 +769,17 @@ export function AdminDashboard() {
       setIsLoading(false);
     }
   };
-  const fetchUserProfile = async () => {
-    try {
-      const response = await api.get<UserProfile>("/api/users/profile");
-      setUserRole(response.data.role);
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
-      setError("Failed to fetch user profile");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const fetchUserProfile = async () => {
+  //   try {
+  //     const response = await api.get<UserProfile>("/api/users/profile");
+  //     setUserRole(response.data.role);
+  //   } catch (error) {
+  //     console.error("Error fetching user profile:", error);
+  //     setError("Failed to fetch user profile");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -1030,8 +1030,6 @@ export function AdminDashboard() {
   // };
 
   const getAccessibleTabs = () => {
-    if (!userRole) return [];
-
     const commonTabs = [
       { icon: Calendar, label: "Overview" },
       { icon: Calendar, label: "Appointments" },
@@ -1039,19 +1037,35 @@ export function AdminDashboard() {
       { icon: PawPrint, label: "Pets" },
       { icon: Bell, label: "Notifications" },
       { icon: ImageIcon, label: "Gallery" },
+      { icon: Syringe, label: "Vaccinations" },
+      { icon: UserCog, label: "User Management" },
     ];
 
-    switch (userRole) {
-      case "veterinarian":
-        return [...commonTabs, { icon: Syringe, label: "Vaccinations" }];
-      case "admin":
-        return [{ icon: UserCog, label: "User Management" }];
-      case "staff":
-        return commonTabs;
-      default:
-        return [];
-    }
+    return commonTabs;
   };
+  // const getAccessibleTabs = () => {
+  //   if (!userRole) return [];
+
+  //   const commonTabs = [
+  //     { icon: Calendar, label: "Overview" },
+  //     { icon: Calendar, label: "Appointments" },
+  //     { icon: Users, label: "Owners" },
+  //     { icon: PawPrint, label: "Pets" },
+  //     { icon: Bell, label: "Notifications" },
+  //     { icon: ImageIcon, label: "Gallery" },
+  //   ];
+
+  //   switch (userRole) {
+  //     case "veterinarian":
+  //       return [...commonTabs, { icon: Syringe, label: "Vaccinations" }];
+  //     case "admin":
+  //       return [{ icon: UserCog, label: "User Management" }];
+  //     case "staff":
+  //       return commonTabs;
+  //     default:
+  //       return [];
+  //   }
+  // };
 
   const accessibleTabs = getAccessibleTabs();
 
@@ -2885,7 +2899,7 @@ export function AdminDashboard() {
                           <TableBody>
                             {vaccinations.map((vaccination) => (
                               <TableRow key={vaccination.id}>
-                                <TableCell>{vaccination.pet.name}</TableCell>
+                                <TableCell>{vaccination.pet?.name}</TableCell>
                                 <TableCell>{vaccination.name}</TableCell>
                                 <TableCell>{vaccination.quantity}</TableCell>
                                 <TableCell>{vaccination.date}</TableCell>
@@ -2981,7 +2995,7 @@ export function AdminDashboard() {
                                             <select
                                               id="editPetId"
                                               name="petId"
-                                              defaultValue={vaccination.pet.id}
+                                              defaultValue={vaccination.pet?.id}
                                               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                                               required
                                             >
