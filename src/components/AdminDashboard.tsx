@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 import {
@@ -58,7 +59,7 @@ import {
   Syringe,
   Send,
   Bell,
-  Check,
+  // Check,
 } from "lucide-react";
 import {
   Table,
@@ -69,12 +70,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import api from "@/config/api";
+import { generateUploadButton } from "@uploadthing/react";
+import "@uploadthing/react/styles.css";
 
 // type UserRole = "admin" | "veterinarian" | "staff";
 
 // interface UserProfile {
 //   role: UserRole;
 // }
+
+export const UploadButton = generateUploadButton({
+  url: import.meta.env.VITE_UPLOAD_THING_URL,
+});
 
 interface Appointment {
   id: string;
@@ -114,17 +121,10 @@ interface Pet {
   created_at: string;
 }
 
-interface Message {
-  id: number;
-  sender: string;
-  message: string;
-  time: string;
-}
-
 interface GalleryItem {
   id: number;
   imageUrl: string;
-  caption: string;
+  pet: Pet;
 }
 
 interface User {
@@ -133,14 +133,6 @@ interface User {
   email: string;
   password: string;
   role: "admin" | "veterinarian" | "staff";
-}
-
-interface PatientHistory {
-  id: number;
-  petName: string;
-  date: string;
-  diagnosis: string;
-  treatment: string;
 }
 
 interface ChatMessage {
@@ -167,6 +159,14 @@ interface Vaccination {
   date: string;
   pet: Pet;
   created_at: string;
+}
+
+interface CurrentUser {
+  firstName: string;
+  lastName: string;
+  profilePicture?: string;
+  googleId: string;
+  user: { role: string; email: string };
 }
 
 type Services =
@@ -236,6 +236,16 @@ export function AdminDashboard() {
     useState<Vaccination | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [editingGalleryItem, setEditingGalleryItem] =
+    useState<GalleryItem | null>(null);
+
+  const [selectedPetId, setSelectedPetId] = useState<string>("");
+
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+  // const [uploadImage, setUploadImage] = useState({ imageUrl: "", petId: "" });
 
   useEffect(() => {
     setMounted(true);
@@ -259,6 +269,8 @@ export function AdminDashboard() {
     fetchVaccinations();
     fetchUsers();
     // fetchUserProfile();
+    fetchCurrentUser();
+    fetchGallery();
   }, []);
 
   const fetchAppointments = async () => {
@@ -769,17 +781,14 @@ export function AdminDashboard() {
       setIsLoading(false);
     }
   };
-  // const fetchUserProfile = async () => {
-  //   try {
-  //     const response = await api.get<UserProfile>("/api/users/profile");
-  //     setUserRole(response.data.role);
-  //   } catch (error) {
-  //     console.error("Error fetching user profile:", error);
-  //     setError("Failed to fetch user profile");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await api.get<CurrentUser>("/api/users/profile");
+      setCurrentUser(response.data);
+    } catch (error) {
+      console.error("Error fetching current user:", error);
+    }
+  };
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -877,97 +886,97 @@ export function AdminDashboard() {
     }
   };
 
-  // const markAsRead = async (id: number) => {
-  //   try {
-  //     const response = await fetch(`/api/notifications/${id}`, {
-  //       method: "PATCH",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({ read: true }),
-  //     });
-  //     if (!response.ok) {
-  //       throw new Error("Failed to mark notification as read");
-  //     }
-  //     setNotifications(
-  //       notifications.map((notification) =>
-  //         notification.id === id
-  //           ? { ...notification, read: true }
-  //           : notification
-  //       )
-  //     );
-  //   } catch (error) {
-  //     console.error("Error marking notification as read:", error);
-  //   }
-  // };
+  // const [messages] = useState<Message[]>([
+  //   {
+  //     id: 1,
+  //     sender: "John Doe",
+  //     message: "When is my next appointment?",
+  //     time: "10:30 AM",
+  //   },
+  //   {
+  //     id: 2,
+  //     sender: "Jane Smith",
+  //     message: "I need to reschedule Buddy's checkup.",
+  //     time: "Yesterday",
+  //   },
+  //   {
+  //     id: 3,
+  //     sender: "Mike Johnson",
+  //     message: "Is Fluffy's medication ready for pickup?",
+  //     time: "2 days ago",
+  //   },
+  // ]);
 
-  const [messages] = useState<Message[]>([
-    {
-      id: 1,
-      sender: "John Doe",
-      message: "When is my next appointment?",
-      time: "10:30 AM",
-    },
-    {
-      id: 2,
-      sender: "Jane Smith",
-      message: "I need to reschedule Buddy's checkup.",
-      time: "Yesterday",
-    },
-    {
-      id: 3,
-      sender: "Mike Johnson",
-      message: "Is Fluffy's medication ready for pickup?",
-      time: "2 days ago",
-    },
-  ]);
+  const fetchGallery = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.get<GalleryItem[]>("/api/gallery");
+      setGalleryItems(response.data);
+    } catch (err) {
+      console.error("Error fetching gallery items:", err);
+      setError("An error occurred while fetching gallery items");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([
-    {
-      id: 1,
-      imageUrl: "/placeholder.svg?height=300&width=300&text=Pet 1",
-      caption: "Max the Golden Retriever",
-    },
-    {
-      id: 2,
-      imageUrl: "/placeholder.svg?height=300&width=300&text=Pet 2",
-      caption: "Whiskers the Siamese Cat",
-    },
-    {
-      id: 3,
-      imageUrl: "/placeholder.svg?height=300&width=300&text=Pet 3",
-      caption: "Buddy the Labrador",
-    },
-    {
-      id: 4,
-      imageUrl: "/placeholder.svg?height=300&width=300&text=Pet 4",
-      caption: "Fluffy the Persian Cat",
-    },
-  ]);
+  const handleAddGallery = async (imageUrl: string, petId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.post<GalleryItem>("/api/gallery", {
+        imageUrl,
+        petId,
+      });
+      setGalleryItems([...galleryItems, response.data]);
+      setIsAddDialogOpen(false);
+      setIsSuccessDialogOpen(true);
+    } catch (err) {
+      console.error("Error adding gallery item:", err);
+      setError("An error occurred while adding the gallery item");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const [patientHistory] = useState<PatientHistory[]>([
-    {
-      id: 1,
-      petName: "Max",
-      date: "2023-05-01",
-      diagnosis: "Ear infection",
-      treatment: "Prescribed ear drops",
-    },
-    {
-      id: 2,
-      petName: "Whiskers",
-      date: "2023-05-10",
-      diagnosis: "Annual checkup",
-      treatment: "Vaccinations updated",
-    },
-    {
-      id: 3,
-      petName: "Buddy",
-      date: "2023-05-15",
-      diagnosis: "Sprained paw",
-      treatment: "Rest and anti-inflammatory medication",
-    },
-  ]);
+  const handleEditGallery = async (formData: FormData) => {
+    if (!editingGalleryItem) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.put<GalleryItem>(
+        `/api/gallery/${editingGalleryItem.id}`,
+        formData
+      );
+      setGalleryItems(
+        galleryItems.map((item) =>
+          item.id === editingGalleryItem.id ? response.data : item
+        )
+      );
+      setEditingGalleryItem(null);
+    } catch (err) {
+      console.error("Error updating gallery item:", err);
+      setError("An error occurred while updating the gallery item");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteGallery = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this gallery item?")) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.delete(`/api/gallery/${id}`);
+      setGalleryItems(galleryItems.filter((item) => item.id !== id));
+    } catch (err) {
+      console.error("Error deleting gallery item:", err);
+      setError("An error occurred while deleting the gallery item");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleNavClick = (tab: string) => {
     setActiveTab(tab.toLowerCase());
@@ -976,14 +985,6 @@ export function AdminDashboard() {
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
-  };
-
-  const handleDeleteItem = <T extends { id: number }>(
-    items: T[],
-    setItems: React.Dispatch<React.SetStateAction<T[]>>,
-    id: number
-  ) => {
-    setItems(items.filter((item) => item.id !== id));
   };
 
   const handleSendMessage = () => {
@@ -1007,27 +1008,6 @@ export function AdminDashboard() {
       navigate("/");
     }
   };
-
-  // const markNotificationAsRead = (id: number) => {
-  //   setNotifications(
-  //     notifications.map((notification) =>
-  //       notification.id === id ? { ...notification, read: true } : notification
-  //     )
-  //   );
-  // };
-  // const addNotification = (
-  //   newNotification: Omit<Notification, "id" | "read">
-  // ) => {
-  //   setNotifications([
-  //     ...notifications,
-  //     { ...newNotification, id: notifications.length + 1, read: false },
-  //   ]);
-  // };
-  // const deleteNotification = (id: number) => {
-  //   setNotifications(
-  //     notifications.filter((notification) => notification.id !== id)
-  //   );
-  // };
 
   const getAccessibleTabs = () => {
     const commonTabs = [
@@ -1145,68 +1125,22 @@ export function AdminDashboard() {
                 <ThemeToggle />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="relative">
-                      <Bell className="h-4 w-4" />
-                      {notifications.some((n) => !n.read) && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
-                          {notifications.filter((n) => !n.read).length}
-                        </span>
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-80">
-                    {notifications.map((notification) => (
-                      <DropdownMenuItem
-                        key={notification.id}
-                        className="flex flex-col items-start p-4"
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className="font-medium">
-                            {notification.title}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteNotification(notification.id)}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {notification.message}
-                        </p>
-                        <div className="flex items-center justify-between w-full mt-2">
-                          <span className="text-xs text-muted-foreground">
-                            {notification.time}
-                          </span>
-                          {!notification.read && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                markNotificationAsRead(notification.id)
-                              }
-                            >
-                              <Check className="h-4 w-4 mr-1" /> Mark as read
-                            </Button>
-                          )}
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       className="relative h-8 w-8 rounded-full"
                     >
                       <Avatar className="h-8 w-8">
                         <AvatarImage
-                          src="/placeholder.svg?height=32&width=32"
-                          alt="Admin"
+                          src={
+                            currentUser?.profilePicture ||
+                            "/placeholder.svg?height=32&width=32"
+                          }
+                          alt={currentUser?.firstName || "User"}
                         />
-                        <AvatarFallback>CJ</AvatarFallback>
+                        <AvatarFallback>
+                          {currentUser?.firstName} {currentUser?.lastName}
+                          {currentUser?.user.email}
+                        </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
@@ -1214,10 +1148,10 @@ export function AdminDashboard() {
                     <DropdownMenuItem className="font-normal">
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium leading-none">
-                          Christian Juan
+                          {currentUser?.firstName}
                         </p>
                         <p className="text-xs leading-none text-muted-foreground">
-                          admin@dogcentral.com
+                          {currentUser?.user.email}
                         </p>
                       </div>
                     </DropdownMenuItem>
@@ -1245,7 +1179,7 @@ export function AdminDashboard() {
                 <div className="space-y-6">
                   <div>
                     <h1 className="text-3xl font-bold tracking-tight">
-                      Welcome, Admin Juan
+                      Welcome, {currentUser?.firstName} {currentUser?.lastName}
                     </h1>
                     <p className="text-muted-foreground">
                       Have a nice day at work!
@@ -1256,16 +1190,17 @@ export function AdminDashboard() {
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
-                          Messages
+                          Notifications
                         </CardTitle>
-                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                        <Bell className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">
-                          {messages.length}
+                          {notifications.length}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          +2 new messages
+                          {notifications.filter((n) => !n.read).length} unread
+                          notifications
                         </p>
                       </CardContent>
                     </Card>
@@ -1308,34 +1243,46 @@ export function AdminDashboard() {
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                     <Card className="col-span-4">
                       <CardHeader className="flex justify-between items-center">
-                        <CardTitle>Recent Messages</CardTitle>
+                        <CardTitle>Recent Notifications</CardTitle>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleNavClick("messages")}
+                          onClick={() => handleNavClick("notifications")}
                         >
                           View All
                         </Button>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-8">
-                          {messages.map((message) => (
-                            <div key={message.id} className="flex items-center">
+                          {notifications.slice(0, 5).map((notification) => (
+                            <div
+                              key={notification.id}
+                              className="flex items-center"
+                            >
                               <Avatar className="h-9 w-9">
+                                <AvatarImage
+                                  src={
+                                    notification.owner?.profilePicture ||
+                                    undefined
+                                  }
+                                  alt={`${
+                                    notification.owner?.firstName || ""
+                                  } ${notification.owner?.lastName || ""}`}
+                                />
                                 <AvatarFallback>
-                                  {message.sender[0]}
+                                  {notification.owner?.firstName?.[0] || "U"}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="ml-4 space-y-1">
                                 <p className="text-sm font-medium leading-none">
-                                  {message.sender}
+                                  {notification.title}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                  {message.message}
+                                  {notification.message}
                                 </p>
                               </div>
                               <div className="ml-auto font-medium text-sm text-muted-foreground">
-                                {message.time}
+                                {formatDate(notification.created_at)}
                               </div>
                             </div>
                           ))}
@@ -1403,7 +1350,9 @@ export function AdminDashboard() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Patient History</CardTitle>
+                      <CardTitle>
+                        Patient History (Completed Appointments)
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <Table>
@@ -1411,19 +1360,26 @@ export function AdminDashboard() {
                           <TableRow>
                             <TableHead>Pet Name</TableHead>
                             <TableHead>Date</TableHead>
-                            <TableHead>Diagnosis</TableHead>
-                            <TableHead>Treatment</TableHead>
+                            <TableHead>Service</TableHead>
+                            <TableHead>Notes</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {patientHistory.map((history) => (
-                            <TableRow key={history.id}>
-                              <TableCell>{history.petName}</TableCell>
-                              <TableCell>{history.date}</TableCell>
-                              <TableCell>{history.diagnosis}</TableCell>
-                              <TableCell>{history.treatment}</TableCell>
-                            </TableRow>
-                          ))}
+                          {appointments
+                            .filter(
+                              (appointment) =>
+                                appointment.status === "completed"
+                            )
+                            .map((appointment) => (
+                              <TableRow key={appointment.id}>
+                                <TableCell>{appointment.pet.name}</TableCell>
+                                <TableCell>{appointment.date}</TableCell>
+                                <TableCell>{appointment.services}</TableCell>
+                                <TableCell>
+                                  {appointment.notes || "N/A"}
+                                </TableCell>
+                              </TableRow>
+                            ))}
                         </TableBody>
                       </Table>
                     </CardContent>
@@ -2556,19 +2512,19 @@ export function AdminDashboard() {
                                   <Avatar>
                                     <AvatarImage
                                       src={
-                                        notification.owner.profilePicture ||
+                                        notification.owner?.profilePicture ||
                                         undefined
                                       }
-                                      alt={`${notification.owner.firstName} ${notification.owner.lastName}`}
+                                      alt={`${notification.owner?.firstName} ${notification.owner?.lastName}`}
                                     />
                                     <AvatarFallback>
-                                      {notification.owner.firstName?.[0]}
-                                      {notification.owner.lastName?.[0]}
+                                      {notification.owner?.firstName?.[0]}
+                                      {notification.owner?.lastName?.[0]}
                                     </AvatarFallback>
                                   </Avatar>
                                   <span>
-                                    {notification.owner.firstName}{" "}
-                                    {notification.owner.lastName}
+                                    {notification.owner?.firstName}{" "}
+                                    {notification.owner?.lastName}
                                   </span>
                                 </div>
                               </TableCell>
@@ -2704,7 +2660,10 @@ export function AdminDashboard() {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <h3 className="text-lg font-semibold">Pet Gallery</h3>
-                        <Dialog>
+                        <Dialog
+                          open={isAddDialogOpen}
+                          onOpenChange={setIsAddDialogOpen}
+                        >
                           <DialogTrigger asChild>
                             <Button>
                               <Plus className="mr-2 h-4 w-4" />
@@ -2715,74 +2674,165 @@ export function AdminDashboard() {
                             <DialogHeader>
                               <DialogTitle>Add New Image</DialogTitle>
                             </DialogHeader>
-                            {/* Add image form */}
-                            <form className="space-y-4">
-                              <div>
-                                <label
-                                  htmlFor="imageUrl"
-                                  className="block text-sm font-medium text-gray-700"
-                                >
-                                  Image URL
-                                </label>
-                                <Input
-                                  id="imageUrl"
-                                  placeholder="Enter image URL"
-                                />
-                              </div>
-                              <div>
-                                <label
-                                  htmlFor="caption"
-                                  className="block text-sm font-medium text-gray-700"
-                                >
-                                  Caption
-                                </label>
-                                <Input
-                                  id="caption"
-                                  placeholder="Enter image caption"
-                                />
-                              </div>
-                              <Button type="submit">Add Image</Button>
-                            </form>
+                            <div className="space-y-4">
+                              <Select
+                                onValueChange={(value) =>
+                                  setSelectedPetId(value)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a pet" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {pets.map((pet) => (
+                                    <SelectItem key={pet.id} value={pet.id}>
+                                      {pet.name} ({pet.type})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <UploadButton
+                                endpoint="galleryUpload"
+                                onClientUploadComplete={async (data) => {
+                                  if (
+                                    data &&
+                                    data.length > 0 &&
+                                    selectedPetId
+                                  ) {
+                                    await handleAddGallery(
+                                      data[0].url,
+                                      selectedPetId
+                                    );
+                                  }
+                                }}
+                              />
+                            </div>
                           </DialogContent>
                         </Dialog>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {galleryItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="relative group overflow-hidden rounded-lg"
-                          >
-                            <img
-                              src={item.imageUrl}
-                              alt={item.caption}
-                              className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
-                            />
-                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              <p className="text-white text-center p-2">
-                                {item.caption}
-                              </p>
-                            </div>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                              onClick={() =>
-                                handleDeleteItem(
-                                  galleryItems,
-                                  setGalleryItems,
-                                  item.id
-                                )
-                              }
+                      {isLoading ? (
+                        <div className="flex justify-center items-center h-32">
+                          <p className="text-lg text-gray-500">
+                            Loading gallery...
+                          </p>
+                        </div>
+                      ) : error ? (
+                        <div
+                          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                          role="alert"
+                        >
+                          <strong className="font-bold">Error:</strong>
+                          <span className="block sm:inline"> {error}</span>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {galleryItems.map((item) => (
+                            <div
+                              key={item.id}
+                              className="relative group overflow-hidden rounded-lg aspect-[9/16]"
                             >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
+                              <img
+                                src={item.imageUrl}
+                                alt={`${item.pet.name}'s photo`}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <p className="text-white text-center p-2">
+                                  {item.pet.name} ({item.pet.type})
+                                </p>
+                                <div className="mt-2 space-x-2">
+                                  <Dialog>
+                                    <DialogTrigger asChild>
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() =>
+                                          setEditingGalleryItem(item)
+                                        }
+                                      >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>
+                                          Edit Gallery Item
+                                        </DialogTitle>
+                                      </DialogHeader>
+                                      <form
+                                        onSubmit={(e) => {
+                                          e.preventDefault();
+                                          const formData = new FormData(
+                                            e.currentTarget
+                                          );
+                                          handleEditGallery(formData);
+                                        }}
+                                        className="space-y-4"
+                                      >
+                                        <Select
+                                          onValueChange={(value) => {
+                                            const formData = new FormData();
+                                            formData.append("petId", value);
+                                            handleEditGallery(formData);
+                                          }}
+                                          defaultValue={item.pet.id}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select a pet" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {pets.map((pet) => (
+                                              <SelectItem
+                                                key={pet.id}
+                                                value={pet.id}
+                                              >
+                                                {pet.name} ({pet.type})
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                        <Button type="submit">
+                                          Update Gallery Item
+                                        </Button>
+                                      </form>
+                                    </DialogContent>
+                                  </Dialog>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleDeleteGallery(item.id)}
+                                  >
+                                    <Trash className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
+                <Dialog
+                  open={isSuccessDialogOpen}
+                  onOpenChange={setIsSuccessDialogOpen}
+                >
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Success</DialogTitle>
+                    </DialogHeader>
+                    <p>The image was uploaded successfully!</p>
+                    <DialogFooter>
+                      <Button onClick={() => setIsSuccessDialogOpen(false)}>
+                        Close
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
+
               <TabsContent value="vaccinations">
                 <Card>
                   <CardHeader>

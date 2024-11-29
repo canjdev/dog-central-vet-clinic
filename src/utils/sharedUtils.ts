@@ -35,53 +35,53 @@ export interface Patient {
 export const services: Service[] = [
   {
     name: "Check Up",
-    image: "https://i.ibb.co/fSKJVNs/checkup.png",
     description: "Regular health examinations for your pet",
+    image: "/icons/checkup.svg", // Will be replaced with Lucide icon
   },
   {
     name: "Vaccination",
-    image: "https://i.ibb.co/pjD8qtx/vaccination.png",
     description: "Protect your pet from various diseases",
+    image: "/icons/vaccination.svg",
   },
   {
     name: "Pet Grooming",
-    image: "https://i.ibb.co/qRwp3nN/petgrooming.png",
     description: "Keep your pet clean and healthy",
+    image: "/icons/grooming.svg",
   },
   {
     name: "Confinement",
-    image: "https://i.ibb.co/VxkLYX0/confinement.png",
     description: "Short-term medical care and observation",
+    image: "/icons/confinement.svg",
   },
   {
     name: "Dental Cleaning",
-    image: "https://i.ibb.co/VxwWJ1m/dental.png",
     description: "Maintain your pet's oral health",
+    image: "/icons/dental.svg",
   },
   {
     name: "Laboratory",
-    image: "https://i.ibb.co/wWn4B4D/laboratory.png",
     description: "Comprehensive diagnostic testing",
+    image: "/icons/laboratory.svg",
   },
   {
     name: "Pet Boarding",
-    image: "https://i.ibb.co/mJvR7rm/petboarding.png",
     description: "Safe and comfortable lodging for your pet",
+    image: "/icons/boarding.svg",
   },
   {
     name: "Surgery",
-    image: "https://i.ibb.co/b7g83Hk/surgery.png",
     description: "Various surgical procedures for your pet",
+    image: "/icons/surgery.svg",
   },
   {
     name: "Ultrasound",
-    image: "https://i.ibb.co/X3Fn3rg/ultrasound.png",
     description: "Non-invasive imaging for diagnosis",
+    image: "/icons/ultrasound.svg",
   },
   {
     name: "Laser Therapy",
-    image: "https://i.ibb.co/5hnVXLc/laser.png",
     description: "Advanced treatment for pain and inflammation",
+    image: "/icons/laser.svg",
   },
 ];
 
