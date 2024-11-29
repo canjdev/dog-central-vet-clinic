@@ -1,25 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  MessageCircle,
-  Send,
-  Menu,
-  Stethoscope,
-  Syringe,
-  Scissors,
-  Building2,
-  SmileIcon as Tooth,
-  FlaskConical,
-  Home,
-  ScissorsIcon as Scalpel,
-  Radio,
-  Zap,
-} from "lucide-react";
+import { Send, Menu, Stethoscope, Syringe, Scissors, Building2, SmileIcon as Tooth, FlaskConical, Home, ScissorsIcon as Scalpel, Radio, Zap } from 'lucide-react';
 import { services, vets, helpers } from "@/utils/sharedUtils";
 import {
   Carousel,
@@ -28,8 +15,9 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Quote } from "lucide-react";
+import { Quote } from 'lucide-react';
 import { ClinicLocations } from "@/components/ClinicLocations";
+import { useAuth } from "@/context/AuthContext";
 
 const serviceIcons = {
   "Check Up": Stethoscope,
@@ -76,12 +64,14 @@ interface GalleryItem {
 }
 
 export default function VetClinicLanding() {
+  const navigate = useNavigate();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, user, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -165,6 +155,23 @@ export default function VetClinicLanding() {
     </>
   );
 
+  const handleLogin = () => {
+    navigate('/login');
+  };
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  const handleBookAppointment = () => {
+    if (isAuthenticated) {
+      // TODO: Implement booking logic for authenticated users
+      console.log("Implement booking logic here");
+    } else {
+      navigate('/login');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header
@@ -186,12 +193,24 @@ export default function VetClinicLanding() {
           </nav>
 
           <div className="flex items-center space-x-4">
-            <Button
-              onClick={() => {}}
-              className="bg-white text-[#F35709] hover:bg-white/90 hover:scale-105 transform transition-transform"
-            >
-              Login
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <span className="text-white">Welcome, {user?.username}</span>
+                <Button
+                  onClick={handleLogout}
+                  className="bg-white text-[#F35709] hover:bg-white/90 hover:scale-105 transform transition-transform"
+                >
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={handleLogin}
+                className="bg-white text-[#F35709] hover:bg-white/90 hover:scale-105 transform transition-transform"
+              >
+                Login
+              </Button>
+            )}
             <a href="/">
               <img
                 src="https://i.ibb.co/30D8mSn/LOGOAGAIN.png"
@@ -232,9 +251,9 @@ export default function VetClinicLanding() {
               <div>
                 <Button
                   className="bg-white text-primary hover:bg-white/90 font-medium text-lg px-8 py-3"
-                  onClick={() => {}}
+                  onClick={handleBookAppointment}
                 >
-                  Book Appointment
+                  {isAuthenticated ? "Book Appointment" : "Login to Book"}
                 </Button>
               </div>
             </div>
@@ -259,7 +278,7 @@ export default function VetClinicLanding() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {services.map((service, index) => {
-                  const IconComponent = serviceIcons[service.name];
+                  const IconComponent = serviceIcons[service.name as keyof typeof serviceIcons];
 
                   return (
                     <div
@@ -540,3 +559,4 @@ export default function VetClinicLanding() {
     </div>
   );
 }
+
