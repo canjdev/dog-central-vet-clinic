@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 import {
@@ -45,7 +46,7 @@ import {
   Users,
   PawPrint,
   MessageSquare,
-  BookOpen,
+  // BookOpen,
   Image as ImageIcon,
   LogOut,
   Search,
@@ -54,10 +55,11 @@ import {
   Edit,
   Trash,
   // FileText,
-  // UserCog,
+  UserCog,
+  Syringe,
   Send,
   Bell,
-  Check,
+  // Check,
 } from "lucide-react";
 import {
   Table,
@@ -68,8 +70,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import api from "@/config/api";
+import { generateUploadButton } from "@uploadthing/react";
+import "@uploadthing/react/styles.css";
 
-// export type UserRole = "customer" | "staff" | "veterinarian" | "admin";
+// type UserRole = "admin" | "veterinarian" | "staff";
+
+// interface UserProfile {
+//   role: UserRole;
+// }
+
+export const UploadButton = generateUploadButton({
+  url: import.meta.env.VITE_UPLOAD_THING_URL,
+});
 
 interface Appointment {
   id: string;
@@ -109,48 +121,18 @@ interface Pet {
   created_at: string;
 }
 
-interface Message {
-  id: number;
-  sender: string;
-  message: string;
-  time: string;
-}
-
-interface Booking {
-  id: number;
-  service: string;
-  pet: string;
-  owner: string;
-  date: string;
-}
-
 interface GalleryItem {
   id: number;
   imageUrl: string;
-  caption: string;
-}
-
-interface Prescription {
-  id: number;
-  petName: string;
-  medication: string;
-  dosage: string;
-  instructions: string;
+  pet: Pet;
 }
 
 interface User {
   id: number;
-  name: string;
+  username: string;
   email: string;
+  password: string;
   role: "admin" | "veterinarian" | "staff";
-}
-
-interface PatientHistory {
-  id: number;
-  petName: string;
-  date: string;
-  diagnosis: string;
-  treatment: string;
 }
 
 interface ChatMessage {
@@ -168,6 +150,23 @@ interface Notification {
   read: boolean;
   owner: Owner;
   created_at: string;
+}
+
+interface Vaccination {
+  id: string;
+  name: string;
+  quantity: string;
+  date: string;
+  pet: Pet;
+  created_at: string;
+}
+
+interface CurrentUser {
+  firstName: string;
+  lastName: string;
+  profilePicture?: string;
+  googleId: string;
+  user: { role: string; email: string };
 }
 
 type Services =
@@ -224,6 +223,7 @@ export function AdminDashboard() {
   const [newPetsCount, setNewPetsCount] = useState(0);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  // const [userRole, setUserRole] = useState<UserRole | null>(null);
   // const [deletingNotificationId, setDeletingNotificationId] = useState<
   //   number | null
   // >(null);
@@ -231,6 +231,21 @@ export function AdminDashboard() {
     useState<Notification | null>(null);
   const [editingAppointment, setEditingAppointment] =
     useState<Appointment | null>(null);
+  const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
+  const [editingVaccination, setEditingVaccination] =
+    useState<Vaccination | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [editingGalleryItem, setEditingGalleryItem] =
+    useState<GalleryItem | null>(null);
+
+  const [selectedPetId, setSelectedPetId] = useState<string>("");
+
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+  // const [uploadImage, setUploadImage] = useState({ imageUrl: "", petId: "" });
 
   useEffect(() => {
     setMounted(true);
@@ -251,6 +266,11 @@ export function AdminDashboard() {
     fetchOwners();
     fetchPets();
     fetchNotifications();
+    fetchVaccinations();
+    fetchUsers();
+    // fetchUserProfile();
+    fetchCurrentUser();
+    fetchGallery();
   }, []);
 
   const fetchAppointments = async () => {
@@ -653,178 +673,310 @@ export function AdminDashboard() {
     }).format(date);
   };
 
-  // const markAsRead = async (id: number) => {
-  //   try {
-  //     const response = await fetch(`/api/notifications/${id}`, {
-  //       method: "PATCH",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({ read: true }),
-  //     });
-  //     if (!response.ok) {
-  //       throw new Error("Failed to mark notification as read");
-  //     }
-  //     setNotifications(
-  //       notifications.map((notification) =>
-  //         notification.id === id
-  //           ? { ...notification, read: true }
-  //           : notification
-  //       )
-  //     );
-  //   } catch (error) {
-  //     console.error("Error marking notification as read:", error);
-  //   }
-  // };
+  const fetchVaccinations = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.get<Vaccination[]>("/api/vaccinations");
+      setVaccinations(response.data);
+    } catch (err) {
+      console.error("Error fetching vaccinations:", err);
+      setError(
+        `An error occurred while fetching vaccinations: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const [messages] = useState<Message[]>([
-    {
-      id: 1,
-      sender: "John Doe",
-      message: "When is my next appointment?",
-      time: "10:30 AM",
-    },
-    {
-      id: 2,
-      sender: "Jane Smith",
-      message: "I need to reschedule Buddy's checkup.",
-      time: "Yesterday",
-    },
-    {
-      id: 3,
-      sender: "Mike Johnson",
-      message: "Is Fluffy's medication ready for pickup?",
-      time: "2 days ago",
-    },
-  ]);
+  const handleAddVaccination = async (formData: FormData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const newVaccinationData = Object.fromEntries(formData);
+      const response = await api.post<Vaccination>(
+        "/api/vaccinations",
+        newVaccinationData
+      );
+      if (response.status === 201) {
+        setVaccinations([...vaccinations, response.data]);
+      } else {
+        throw new Error(
+          `Failed to add vaccination. Status: ${response.status}`
+        );
+      }
+    } catch (err) {
+      console.error("Error adding vaccination:", err);
+      setError(
+        `An error occurred while adding the vaccination: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const [bookings, setBookings] = useState<Booking[]>([
-    {
-      id: 1,
-      service: "Grooming",
-      pet: "Max (Dog)",
-      owner: "John Doe",
-      date: "May 15, 2:00 PM",
-    },
-    {
-      id: 2,
-      service: "Vaccination",
-      pet: "Whiskers (Cat)",
-      owner: "John Doe",
-      date: "May 17, 10:00 AM",
-    },
-    {
-      id: 3,
-      service: "Checkup",
-      pet: "Buddy (Dog)",
-      owner: "Jane Smith",
-      date: "May 20, 3:30 PM",
-    },
-  ]);
+  const handleEditVaccination = async (formData: FormData) => {
+    if (!editingVaccination) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const updatedVaccinationData = Object.fromEntries(formData);
+      const response = await api.put<Vaccination>(
+        `/api/vaccinations/${editingVaccination.id}`,
+        updatedVaccinationData
+      );
+      if (response.status === 200) {
+        setVaccinations(
+          vaccinations.map((vaccination) =>
+            vaccination.id === editingVaccination.id
+              ? response.data
+              : vaccination
+          )
+        );
+        setEditingVaccination(null);
+      } else {
+        throw new Error(
+          `Failed to update vaccination. Status: ${response.status}`
+        );
+      }
+    } catch (err) {
+      console.error("Error updating vaccination:", err);
+      setError(
+        `An error occurred while updating the vaccination: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([
-    {
-      id: 1,
-      imageUrl: "/placeholder.svg?height=300&width=300&text=Pet 1",
-      caption: "Max the Golden Retriever",
-    },
-    {
-      id: 2,
-      imageUrl: "/placeholder.svg?height=300&width=300&text=Pet 2",
-      caption: "Whiskers the Siamese Cat",
-    },
-    {
-      id: 3,
-      imageUrl: "/placeholder.svg?height=300&width=300&text=Pet 3",
-      caption: "Buddy the Labrador",
-    },
-    {
-      id: 4,
-      imageUrl: "/placeholder.svg?height=300&width=300&text=Pet 4",
-      caption: "Fluffy the Persian Cat",
-    },
-  ]);
+  const handleDeleteVaccination = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this vaccination?")) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.delete(`/api/vaccinations/${id}`);
+      if (response.status === 200) {
+        setVaccinations(
+          vaccinations.filter((vaccination) => vaccination.id !== id)
+        );
+      } else {
+        throw new Error(
+          `Failed to delete vaccination. Status: ${response.status}`
+        );
+      }
+    } catch (err) {
+      console.error("Error deleting vaccination:", err);
+      setError(
+        `An error occurred while deleting the vaccination: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await api.get<CurrentUser>("/api/users/profile");
+      setCurrentUser(response.data);
+    } catch (error) {
+      console.error("Error fetching current user:", error);
+    }
+  };
 
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([
-    {
-      id: 1,
-      petName: "Max",
-      medication: "Antibiotic",
-      dosage: "1 pill",
-      instructions: "Twice daily with food",
-    },
-    {
-      id: 2,
-      petName: "Whiskers",
-      medication: "Flea treatment",
-      dosage: "1 application",
-      instructions: "Monthly",
-    },
-    {
-      id: 3,
-      petName: "Buddy",
-      medication: "Joint supplement",
-      dosage: "1 chew",
-      instructions: "Once daily",
-    },
-  ]);
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.get<User[]>("/api/users");
+      setUsers(response.data);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      setError(
+        `An error occurred while fetching users: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const [users, setUsers] = useState<User[]>([
-    { id: 1, name: "Admin User", email: "admin@example.com", role: "admin" },
-    { id: 2, name: "Vet User", email: "vet@example.com", role: "veterinarian" },
-    { id: 3, name: "Staff User", email: "staff@example.com", role: "staff" },
-  ]);
+  const handleAddUser = async (formData: FormData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const newUserData = Object.fromEntries(formData);
+      const response = await api.post<User>("/api/users", newUserData);
+      if (response.status === 201) {
+        setUsers([...users, response.data]);
+      } else {
+        throw new Error(`Failed to add user. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error adding user:", err);
+      setError(
+        `An error occurred while adding the user: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const [patientHistory] = useState<PatientHistory[]>([
-    {
-      id: 1,
-      petName: "Max",
-      date: "2023-05-01",
-      diagnosis: "Ear infection",
-      treatment: "Prescribed ear drops",
-    },
-    {
-      id: 2,
-      petName: "Whiskers",
-      date: "2023-05-10",
-      diagnosis: "Annual checkup",
-      treatment: "Vaccinations updated",
-    },
-    {
-      id: 3,
-      petName: "Buddy",
-      date: "2023-05-15",
-      diagnosis: "Sprained paw",
-      treatment: "Rest and anti-inflammatory medication",
-    },
-  ]);
+  const handleEditUser = async (formData: FormData) => {
+    if (!editingUser) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const updatedUserData = Object.fromEntries(formData);
+      const response = await api.put<User>(
+        `/api/users/${editingUser.id}`,
+        updatedUserData
+      );
+      if (response.status === 200) {
+        setUsers(
+          users.map((user) =>
+            user.id === editingUser.id ? response.data : user
+          )
+        );
+        setEditingUser(null);
+      } else {
+        throw new Error(`Failed to update user. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error updating user:", err);
+      setError(
+        `An error occurred while updating the user: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // const [notifications, setNotifications] = useState<Notification[]>([
+  const handleDeleteUser = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.delete(`/api/users/${id}`);
+      if (response.status === 200) {
+        setUsers(users.filter((user) => user.id !== id));
+      } else {
+        throw new Error(`Failed to delete user. Status: ${response.status}`);
+      }
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      setError(
+        `An error occurred while deleting the user: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // const [messages] = useState<Message[]>([
   //   {
   //     id: 1,
-  //     title: "New Appointment",
-  //     message: "You have a new appointment request",
-  //     time: "5 min ago",
-  //     read: false,
-  //     ownerName: "Christian Angelo Juan",
+  //     sender: "John Doe",
+  //     message: "When is my next appointment?",
+  //     time: "10:30 AM",
   //   },
   //   {
   //     id: 2,
-  //     title: "Medication Reminder",
-  //     message: "Don't forget to administer Max's medication",
-  //     time: "1 hour ago",
-  //     read: false,
-  //     ownerName: "Jefferson Garcia",
+  //     sender: "Jane Smith",
+  //     message: "I need to reschedule Buddy's checkup.",
+  //     time: "Yesterday",
   //   },
   //   {
   //     id: 3,
-  //     title: "System Update",
-  //     message: "The system will undergo maintenance tonight",
-  //     time: "2 hours ago",
-  //     read: true,
-  //     ownerName: "System",
+  //     sender: "Mike Johnson",
+  //     message: "Is Fluffy's medication ready for pickup?",
+  //     time: "2 days ago",
   //   },
   // ]);
+
+  const fetchGallery = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.get<GalleryItem[]>("/api/gallery");
+      setGalleryItems(response.data);
+    } catch (err) {
+      console.error("Error fetching gallery items:", err);
+      setError("An error occurred while fetching gallery items");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddGallery = async (imageUrl: string, petId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.post<GalleryItem>("/api/gallery", {
+        imageUrl,
+        petId,
+      });
+      setGalleryItems([...galleryItems, response.data]);
+      setIsAddDialogOpen(false);
+      setIsSuccessDialogOpen(true);
+    } catch (err) {
+      console.error("Error adding gallery item:", err);
+      setError("An error occurred while adding the gallery item");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditGallery = async (formData: FormData) => {
+    if (!editingGalleryItem) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.put<GalleryItem>(
+        `/api/gallery/${editingGalleryItem.id}`,
+        formData
+      );
+      setGalleryItems(
+        galleryItems.map((item) =>
+          item.id === editingGalleryItem.id ? response.data : item
+        )
+      );
+      setEditingGalleryItem(null);
+    } catch (err) {
+      console.error("Error updating gallery item:", err);
+      setError("An error occurred while updating the gallery item");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteGallery = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this gallery item?")) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.delete(`/api/gallery/${id}`);
+      setGalleryItems(galleryItems.filter((item) => item.id !== id));
+    } catch (err) {
+      console.error("Error deleting gallery item:", err);
+      setError("An error occurred while deleting the gallery item");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleNavClick = (tab: string) => {
     setActiveTab(tab.toLowerCase());
@@ -833,14 +985,6 @@ export function AdminDashboard() {
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
-  };
-
-  const handleDeleteItem = <T extends { id: number }>(
-    items: T[],
-    setItems: React.Dispatch<React.SetStateAction<T[]>>,
-    id: number
-  ) => {
-    setItems(items.filter((item) => item.id !== id));
   };
 
   const handleSendMessage = () => {
@@ -865,27 +1009,6 @@ export function AdminDashboard() {
     }
   };
 
-  // const markNotificationAsRead = (id: number) => {
-  //   setNotifications(
-  //     notifications.map((notification) =>
-  //       notification.id === id ? { ...notification, read: true } : notification
-  //     )
-  //   );
-  // };
-  // const addNotification = (
-  //   newNotification: Omit<Notification, "id" | "read">
-  // ) => {
-  //   setNotifications([
-  //     ...notifications,
-  //     { ...newNotification, id: notifications.length + 1, read: false },
-  //   ]);
-  // };
-  // const deleteNotification = (id: number) => {
-  //   setNotifications(
-  //     notifications.filter((notification) => notification.id !== id)
-  //   );
-  // };
-
   const getAccessibleTabs = () => {
     const commonTabs = [
       { icon: Calendar, label: "Overview" },
@@ -893,20 +1016,36 @@ export function AdminDashboard() {
       { icon: Users, label: "Owners" },
       { icon: PawPrint, label: "Pets" },
       { icon: Bell, label: "Notifications" },
-      { icon: BookOpen, label: "Bookings" },
       { icon: ImageIcon, label: "Gallery" },
+      { icon: Syringe, label: "Vaccinations" },
+      { icon: UserCog, label: "User Management" },
     ];
-
-    // if (userRole === "veterinarian") {
-    //   return [...commonTabs, { icon: FileText, label: "Prescriptions" }];
-    // }
-
-    // if (userRole === "admin") {
-    //   return [...commonTabs, { icon: UserCog, label: "User Management" }];
-    // }
 
     return commonTabs;
   };
+  // const getAccessibleTabs = () => {
+  //   if (!userRole) return [];
+
+  //   const commonTabs = [
+  //     { icon: Calendar, label: "Overview" },
+  //     { icon: Calendar, label: "Appointments" },
+  //     { icon: Users, label: "Owners" },
+  //     { icon: PawPrint, label: "Pets" },
+  //     { icon: Bell, label: "Notifications" },
+  //     { icon: ImageIcon, label: "Gallery" },
+  //   ];
+
+  //   switch (userRole) {
+  //     case "veterinarian":
+  //       return [...commonTabs, { icon: Syringe, label: "Vaccinations" }];
+  //     case "admin":
+  //       return [{ icon: UserCog, label: "User Management" }];
+  //     case "staff":
+  //       return commonTabs;
+  //     default:
+  //       return [];
+  //   }
+  // };
 
   const accessibleTabs = getAccessibleTabs();
 
@@ -933,7 +1072,7 @@ export function AdminDashboard() {
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <div className="flex flex-col h-screen bg-background lg:flex-row">
         {/* Sidebar */}
-        <div
+        <aside
           className={`w-64 bg-background border-r shadow-md flex-shrink-0 fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out transform ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           } lg:relative lg:translate-x-0`}
@@ -960,8 +1099,7 @@ export function AdminDashboard() {
               </Button>
             ))}
           </nav>
-          <div className="absolute bottom-4 left-4 right-4"></div>
-        </div>
+        </aside>
 
         {/* Main content */}
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -987,68 +1125,22 @@ export function AdminDashboard() {
                 <ThemeToggle />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="relative">
-                      <Bell className="h-4 w-4" />
-                      {notifications.some((n) => !n.read) && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center">
-                          {notifications.filter((n) => !n.read).length}
-                        </span>
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-80">
-                    {notifications.map((notification) => (
-                      <DropdownMenuItem
-                        key={notification.id}
-                        className="flex flex-col items-start p-4"
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className="font-medium">
-                            {notification.title}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteNotification(notification.id)}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {notification.message}
-                        </p>
-                        <div className="flex items-center justify-between w-full mt-2">
-                          <span className="text-xs text-muted-foreground">
-                            {notification.time}
-                          </span>
-                          {!notification.read && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                markNotificationAsRead(notification.id)
-                              }
-                            >
-                              <Check className="h-4 w-4 mr-1" /> Mark as read
-                            </Button>
-                          )}
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       className="relative h-8 w-8 rounded-full"
                     >
                       <Avatar className="h-8 w-8">
                         <AvatarImage
-                          src="/placeholder.svg?height=32&width=32"
-                          alt="Admin"
+                          src={
+                            currentUser?.profilePicture ||
+                            "/placeholder.svg?height=32&width=32"
+                          }
+                          alt={currentUser?.firstName || "User"}
                         />
-                        <AvatarFallback>CJ</AvatarFallback>
+                        <AvatarFallback>
+                          {currentUser?.firstName} {currentUser?.lastName}
+                          {currentUser?.user.email}
+                        </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
@@ -1056,10 +1148,10 @@ export function AdminDashboard() {
                     <DropdownMenuItem className="font-normal">
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium leading-none">
-                          Christian Juan
+                          {currentUser?.firstName}
                         </p>
                         <p className="text-xs leading-none text-muted-foreground">
-                          admin@dogcentral.com
+                          {currentUser?.user.email}
                         </p>
                       </div>
                     </DropdownMenuItem>
@@ -1087,7 +1179,7 @@ export function AdminDashboard() {
                 <div className="space-y-6">
                   <div>
                     <h1 className="text-3xl font-bold tracking-tight">
-                      Welcome, Admin Juan
+                      Welcome, {currentUser?.firstName} {currentUser?.lastName}
                     </h1>
                     <p className="text-muted-foreground">
                       Have a nice day at work!
@@ -1098,16 +1190,17 @@ export function AdminDashboard() {
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
-                          Messages
+                          Notifications
                         </CardTitle>
-                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                        <Bell className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">
-                          {messages.length}
+                          {notifications.length}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          +2 new messages
+                          {notifications.filter((n) => !n.read).length} unread
+                          notifications
                         </p>
                       </CardContent>
                     </Card>
@@ -1150,34 +1243,46 @@ export function AdminDashboard() {
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                     <Card className="col-span-4">
                       <CardHeader className="flex justify-between items-center">
-                        <CardTitle>Recent Messages</CardTitle>
+                        <CardTitle>Recent Notifications</CardTitle>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleNavClick("messages")}
+                          onClick={() => handleNavClick("notifications")}
                         >
                           View All
                         </Button>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-8">
-                          {messages.map((message) => (
-                            <div key={message.id} className="flex items-center">
+                          {notifications.slice(0, 5).map((notification) => (
+                            <div
+                              key={notification.id}
+                              className="flex items-center"
+                            >
                               <Avatar className="h-9 w-9">
+                                <AvatarImage
+                                  src={
+                                    notification.owner?.profilePicture ||
+                                    undefined
+                                  }
+                                  alt={`${
+                                    notification.owner?.firstName || ""
+                                  } ${notification.owner?.lastName || ""}`}
+                                />
                                 <AvatarFallback>
-                                  {message.sender[0]}
+                                  {notification.owner?.firstName?.[0] || "U"}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="ml-4 space-y-1">
                                 <p className="text-sm font-medium leading-none">
-                                  {message.sender}
+                                  {notification.title}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                  {message.message}
+                                  {notification.message}
                                 </p>
                               </div>
                               <div className="ml-auto font-medium text-sm text-muted-foreground">
-                                {message.time}
+                                {formatDate(notification.created_at)}
                               </div>
                             </div>
                           ))}
@@ -1245,7 +1350,9 @@ export function AdminDashboard() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Patient History</CardTitle>
+                      <CardTitle>
+                        Patient History (Completed Appointments)
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <Table>
@@ -1253,19 +1360,26 @@ export function AdminDashboard() {
                           <TableRow>
                             <TableHead>Pet Name</TableHead>
                             <TableHead>Date</TableHead>
-                            <TableHead>Diagnosis</TableHead>
-                            <TableHead>Treatment</TableHead>
+                            <TableHead>Service</TableHead>
+                            <TableHead>Notes</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {patientHistory.map((history) => (
-                            <TableRow key={history.id}>
-                              <TableCell>{history.petName}</TableCell>
-                              <TableCell>{history.date}</TableCell>
-                              <TableCell>{history.diagnosis}</TableCell>
-                              <TableCell>{history.treatment}</TableCell>
-                            </TableRow>
-                          ))}
+                          {appointments
+                            .filter(
+                              (appointment) =>
+                                appointment.status === "completed"
+                            )
+                            .map((appointment) => (
+                              <TableRow key={appointment.id}>
+                                <TableCell>{appointment.pet.name}</TableCell>
+                                <TableCell>{appointment.date}</TableCell>
+                                <TableCell>{appointment.services}</TableCell>
+                                <TableCell>
+                                  {appointment.notes || "N/A"}
+                                </TableCell>
+                              </TableRow>
+                            ))}
                         </TableBody>
                       </Table>
                     </CardContent>
@@ -1479,8 +1593,8 @@ export function AdminDashboard() {
                                   {appointment.owner?.firstName}{" "}
                                   {appointment.owner?.lastName}
                                 </TableCell>
-                                <TableCell>{appointment.petName}</TableCell>
-                                <TableCell>{appointment.petType}</TableCell>
+                                <TableCell>{appointment.pet.name}</TableCell>
+                                <TableCell>{appointment.pet.type}</TableCell>
                                 <TableCell>{appointment.date}</TableCell>
                                 <TableCell>{appointment.time}</TableCell>
                                 <TableCell>{appointment.services}</TableCell>
@@ -2398,19 +2512,19 @@ export function AdminDashboard() {
                                   <Avatar>
                                     <AvatarImage
                                       src={
-                                        notification.owner.profilePicture ||
+                                        notification.owner?.profilePicture ||
                                         undefined
                                       }
-                                      alt={`${notification.owner.firstName} ${notification.owner.lastName}`}
+                                      alt={`${notification.owner?.firstName} ${notification.owner?.lastName}`}
                                     />
                                     <AvatarFallback>
-                                      {notification.owner.firstName?.[0]}
-                                      {notification.owner.lastName?.[0]}
+                                      {notification.owner?.firstName?.[0]}
+                                      {notification.owner?.lastName?.[0]}
                                     </AvatarFallback>
                                   </Avatar>
                                   <span>
-                                    {notification.owner.firstName}{" "}
-                                    {notification.owner.lastName}
+                                    {notification.owner?.firstName}{" "}
+                                    {notification.owner?.lastName}
                                   </span>
                                 </div>
                               </TableCell>
@@ -2537,123 +2651,6 @@ export function AdminDashboard() {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="bookings">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Bookings</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-semibold">Booking List</h3>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button>
-                              <Plus className="mr-2 h-4 w-4" />
-                              Add Booking
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Add New Booking</DialogTitle>
-                            </DialogHeader>
-                            {/* Add booking form */}
-                            <form className="space-y-4">
-                              <div>
-                                <label
-                                  htmlFor="service"
-                                  className="block text-sm font-medium text-gray-700"
-                                >
-                                  Service
-                                </label>
-                                <Input
-                                  id="service"
-                                  placeholder="Enter service name"
-                                />
-                              </div>
-                              <div>
-                                <label
-                                  htmlFor="pet"
-                                  className="block text-sm font-medium text-gray-700"
-                                >
-                                  Pet
-                                </label>
-                                <Input id="pet" placeholder="Enter pet name" />
-                              </div>
-                              <div>
-                                <label
-                                  htmlFor="owner"
-                                  className="block text-sm font-medium text-gray-700"
-                                >
-                                  Owner
-                                </label>
-                                <Input
-                                  id="owner"
-                                  placeholder="Enter owner name"
-                                />
-                              </div>
-                              <div>
-                                <label
-                                  htmlFor="date"
-                                  className="block text-sm font-medium text-gray-700"
-                                >
-                                  Date
-                                </label>
-                                <Input id="date" type="datetime-local" />
-                              </div>
-                              <Button type="submit">Add Booking</Button>
-                            </form>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Service</TableHead>
-                            <TableHead>Pet</TableHead>
-                            <TableHead>Owner</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {bookings.map((booking) => (
-                            <TableRow key={booking.id}>
-                              <TableCell>{booking.service}</TableCell>
-                              <TableCell>{booking.pet}</TableCell>
-                              <TableCell>{booking.owner}</TableCell>
-                              <TableCell>{booking.date}</TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="mr-2"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleDeleteItem(
-                                      bookings,
-                                      setBookings,
-                                      booking.id
-                                    )
-                                  }
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
               <TabsContent value="gallery">
                 <Card>
                   <CardHeader>
@@ -2663,7 +2660,10 @@ export function AdminDashboard() {
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <h3 className="text-lg font-semibold">Pet Gallery</h3>
-                        <Dialog>
+                        <Dialog
+                          open={isAddDialogOpen}
+                          onOpenChange={setIsAddDialogOpen}
+                        >
                           <DialogTrigger asChild>
                             <Button>
                               <Plus className="mr-2 h-4 w-4" />
@@ -2674,192 +2674,416 @@ export function AdminDashboard() {
                             <DialogHeader>
                               <DialogTitle>Add New Image</DialogTitle>
                             </DialogHeader>
-                            {/* Add image form */}
-                            <form className="space-y-4">
-                              <div>
-                                <label
-                                  htmlFor="imageUrl"
-                                  className="block text-sm font-medium text-gray-700"
-                                >
-                                  Image URL
-                                </label>
-                                <Input
-                                  id="imageUrl"
-                                  placeholder="Enter image URL"
-                                />
-                              </div>
-                              <div>
-                                <label
-                                  htmlFor="caption"
-                                  className="block text-sm font-medium text-gray-700"
-                                >
-                                  Caption
-                                </label>
-                                <Input
-                                  id="caption"
-                                  placeholder="Enter image caption"
-                                />
-                              </div>
-                              <Button type="submit">Add Image</Button>
-                            </form>
+                            <div className="space-y-4">
+                              <Select
+                                onValueChange={(value) =>
+                                  setSelectedPetId(value)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a pet" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {pets.map((pet) => (
+                                    <SelectItem key={pet.id} value={pet.id}>
+                                      {pet.name} ({pet.type})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <UploadButton
+                                endpoint="galleryUpload"
+                                onClientUploadComplete={async (data) => {
+                                  if (
+                                    data &&
+                                    data.length > 0 &&
+                                    selectedPetId
+                                  ) {
+                                    await handleAddGallery(
+                                      data[0].url,
+                                      selectedPetId
+                                    );
+                                  }
+                                }}
+                              />
+                            </div>
                           </DialogContent>
                         </Dialog>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {galleryItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="relative group overflow-hidden rounded-lg"
-                          >
-                            <img
-                              src={item.imageUrl}
-                              alt={item.caption}
-                              className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
-                            />
-                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              <p className="text-white text-center p-2">
-                                {item.caption}
-                              </p>
-                            </div>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                              onClick={() =>
-                                handleDeleteItem(
-                                  galleryItems,
-                                  setGalleryItems,
-                                  item.id
-                                )
-                              }
+                      {isLoading ? (
+                        <div className="flex justify-center items-center h-32">
+                          <p className="text-lg text-gray-500">
+                            Loading gallery...
+                          </p>
+                        </div>
+                      ) : error ? (
+                        <div
+                          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                          role="alert"
+                        >
+                          <strong className="font-bold">Error:</strong>
+                          <span className="block sm:inline"> {error}</span>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {galleryItems.map((item) => (
+                            <div
+                              key={item.id}
+                              className="relative group overflow-hidden rounded-lg aspect-[9/16]"
                             >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
+                              <img
+                                src={item.imageUrl}
+                                alt={`${item.pet.name}'s photo`}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <p className="text-white text-center p-2">
+                                  {item.pet.name} ({item.pet.type})
+                                </p>
+                                <div className="mt-2 space-x-2">
+                                  <Dialog>
+                                    <DialogTrigger asChild>
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() =>
+                                          setEditingGalleryItem(item)
+                                        }
+                                      >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>
+                                          Edit Gallery Item
+                                        </DialogTitle>
+                                      </DialogHeader>
+                                      <form
+                                        onSubmit={(e) => {
+                                          e.preventDefault();
+                                          const formData = new FormData(
+                                            e.currentTarget
+                                          );
+                                          handleEditGallery(formData);
+                                        }}
+                                        className="space-y-4"
+                                      >
+                                        <Select
+                                          onValueChange={(value) => {
+                                            const formData = new FormData();
+                                            formData.append("petId", value);
+                                            handleEditGallery(formData);
+                                          }}
+                                          defaultValue={item.pet.id}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select a pet" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {pets.map((pet) => (
+                                              <SelectItem
+                                                key={pet.id}
+                                                value={pet.id}
+                                              >
+                                                {pet.name} ({pet.type})
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                        <Button type="submit">
+                                          Update Gallery Item
+                                        </Button>
+                                      </form>
+                                    </DialogContent>
+                                  </Dialog>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleDeleteGallery(item.id)}
+                                  >
+                                    <Trash className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
+                <Dialog
+                  open={isSuccessDialogOpen}
+                  onOpenChange={setIsSuccessDialogOpen}
+                >
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Success</DialogTitle>
+                    </DialogHeader>
+                    <p>The image was uploaded successfully!</p>
+                    <DialogFooter>
+                      <Button onClick={() => setIsSuccessDialogOpen(false)}>
+                        Close
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
 
-              <TabsContent value="prescriptions">
+              <TabsContent value="vaccinations">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Prescriptions</CardTitle>
+                    <CardTitle>Vaccinations</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <h3 className="text-lg font-semibold">
-                          Prescription List
+                          Vaccination List
                         </h3>
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button>
                               <Plus className="mr-2 h-4 w-4" />
-                              Add Prescription
+                              Add Vaccination
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Add New Prescription</DialogTitle>
+                              <DialogTitle>Add New Vaccination</DialogTitle>
                             </DialogHeader>
-                            {/* Add prescription form */}
-                            <form className="space-y-4">
+                            <form
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                handleAddVaccination(
+                                  new FormData(e.target as HTMLFormElement)
+                                );
+                              }}
+                              className="space-y-4"
+                            >
                               <div>
                                 <label
-                                  htmlFor="petName"
+                                  htmlFor="name"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Pet Name
+                                  Vaccine Name
+                                </label>
+                                <Input id="name" name="name" required />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="quantity"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Quantity
+                                </label>
+                                <Input id="quantity" name="quantity" required />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="date"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Date
                                 </label>
                                 <Input
-                                  id="petName"
-                                  placeholder="Enter pet name"
+                                  id="date"
+                                  name="date"
+                                  type="date"
+                                  required
                                 />
                               </div>
                               <div>
                                 <label
-                                  htmlFor="medication"
+                                  htmlFor="petId"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Medication
+                                  Pet
                                 </label>
-                                <Input
-                                  id="medication"
-                                  placeholder="Enter medication name"
-                                />
-                              </div>
-                              <div>
-                                <label
-                                  htmlFor="dosage"
-                                  className="block text-sm font-medium text-gray-700"
+                                <select
+                                  id="petId"
+                                  name="petId"
+                                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                  required
                                 >
-                                  Dosage
-                                </label>
-                                <Input id="dosage" placeholder="Enter dosage" />
+                                  {pets.map((pet) => (
+                                    <option key={pet.id} value={pet.id}>
+                                      {pet.name}
+                                    </option>
+                                  ))}
+                                </select>
                               </div>
-                              <div>
-                                <label
-                                  htmlFor="instructions"
-                                  className="block text-sm font-medium text-gray-700"
-                                >
-                                  Instructions
-                                </label>
-                                <Input
-                                  id="instructions"
-                                  placeholder="Enter instructions"
-                                />
-                              </div>
-                              <Button type="submit">Add Prescription</Button>
+                              <Button type="submit">Add Vaccination</Button>
                             </form>
                           </DialogContent>
                         </Dialog>
                       </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Pet Name</TableHead>
-                            <TableHead>Medication</TableHead>
-                            <TableHead>Dosage</TableHead>
-                            <TableHead>Instructions</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {prescriptions.map((prescription) => (
-                            <TableRow key={prescription.id}>
-                              <TableCell>{prescription.petName}</TableCell>
-                              <TableCell>{prescription.medication}</TableCell>
-                              <TableCell>{prescription.dosage}</TableCell>
-                              <TableCell>{prescription.instructions}</TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="mr-2"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleDeleteItem(
-                                      prescriptions,
-                                      setPrescriptions,
-                                      prescription.id
-                                    )
-                                  }
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
+                      {isLoading ? (
+                        <div className="flex justify-center items-center h-32">
+                          <p className="text-lg text-gray-500">
+                            Loading vaccinations...
+                          </p>
+                        </div>
+                      ) : error ? (
+                        <div
+                          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                          role="alert"
+                        >
+                          <strong className="font-bold">Error:</strong>
+                          <span className="block sm:inline"> {error}</span>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Pet</TableHead>
+                              <TableHead>Vaccine</TableHead>
+                              <TableHead>Quantity</TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Actions</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {vaccinations.map((vaccination) => (
+                              <TableRow key={vaccination.id}>
+                                <TableCell>{vaccination.pet?.name}</TableCell>
+                                <TableCell>{vaccination.name}</TableCell>
+                                <TableCell>{vaccination.quantity}</TableCell>
+                                <TableCell>{vaccination.date}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() =>
+                                            setEditingVaccination(vaccination)
+                                          }
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Edit vaccination
+                                          </span>
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>
+                                            Edit Vaccination
+                                          </DialogTitle>
+                                        </DialogHeader>
+                                        <form
+                                          onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(
+                                              e.currentTarget
+                                            );
+                                            formData.append(
+                                              "id",
+                                              vaccination.id
+                                            );
+                                            handleEditVaccination(formData);
+                                          }}
+                                          className="space-y-4"
+                                        >
+                                          <div>
+                                            <label
+                                              htmlFor="editName"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Vaccine Name
+                                            </label>
+                                            <Input
+                                              id="editName"
+                                              name="name"
+                                              defaultValue={vaccination.name}
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editQuantity"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Quantity
+                                            </label>
+                                            <Input
+                                              id="editQuantity"
+                                              name="quantity"
+                                              defaultValue={
+                                                vaccination.quantity
+                                              }
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editDate"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Date
+                                            </label>
+                                            <Input
+                                              id="editDate"
+                                              name="date"
+                                              type="date"
+                                              defaultValue={vaccination.date}
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editPetId"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Pet
+                                            </label>
+                                            <select
+                                              id="editPetId"
+                                              name="petId"
+                                              defaultValue={vaccination.pet?.id}
+                                              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                              required
+                                            >
+                                              {pets.map((pet) => (
+                                                <option
+                                                  key={pet.id}
+                                                  value={pet.id}
+                                                >
+                                                  {pet.name}
+                                                </option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                          <Button type="submit">
+                                            Update Vaccination
+                                          </Button>
+                                        </form>
+                                      </DialogContent>
+                                    </Dialog>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() =>
+                                        handleDeleteVaccination(vaccination.id)
+                                      }
+                                    >
+                                      <Trash className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Delete vaccination
+                                      </span>
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -2885,16 +3109,23 @@ export function AdminDashboard() {
                             <DialogHeader>
                               <DialogTitle>Add New User</DialogTitle>
                             </DialogHeader>
-                            {/* Add user form */}
-                            <form className="space-y-4">
+                            <form
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                handleAddUser(
+                                  new FormData(e.target as HTMLFormElement)
+                                );
+                              }}
+                              className="space-y-4"
+                            >
                               <div>
                                 <label
-                                  htmlFor="name"
+                                  htmlFor="username"
                                   className="block text-sm font-medium text-gray-700"
                                 >
-                                  Name
+                                  Username
                                 </label>
-                                <Input id="name" placeholder="Enter name" />
+                                <Input id="username" name="username" required />
                               </div>
                               <div>
                                 <label
@@ -2905,8 +3136,23 @@ export function AdminDashboard() {
                                 </label>
                                 <Input
                                   id="email"
+                                  name="email"
                                   type="email"
-                                  placeholder="Enter email"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="password"
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Password
+                                </label>
+                                <Input
+                                  id="password"
+                                  name="password"
+                                  type="password"
+                                  required
                                 />
                               </div>
                               <div>
@@ -2918,7 +3164,9 @@ export function AdminDashboard() {
                                 </label>
                                 <select
                                   id="role"
+                                  name="role"
                                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                  required
                                 >
                                   <option value="admin">Admin</option>
                                   <option value="veterinarian">
@@ -2932,43 +3180,167 @@ export function AdminDashboard() {
                           </DialogContent>
                         </Dialog>
                       </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {users.map((user) => (
-                            <TableRow key={user.id}>
-                              <TableCell>{user.name}</TableCell>
-                              <TableCell>{user.email}</TableCell>
-                              <TableCell>{user.role}</TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="mr-2"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleDeleteItem(users, setUsers, user.id)
-                                  }
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
+                      {isLoading ? (
+                        <div className="flex justify-center items-center h-32">
+                          <p className="text-lg text-gray-500">
+                            Loading users...
+                          </p>
+                        </div>
+                      ) : error ? (
+                        <div
+                          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                          role="alert"
+                        >
+                          <strong className="font-bold">Error:</strong>
+                          <span className="block sm:inline"> {error}</span>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Username</TableHead>
+                              <TableHead>Email</TableHead>
+                              <TableHead>Password</TableHead>
+                              <TableHead>Role</TableHead>
+                              <TableHead>Actions</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {users.map((user) => (
+                              <TableRow key={user.id}>
+                                <TableCell>{user.username}</TableCell>
+                                <TableCell>{user.email}</TableCell>
+                                <TableCell>
+                                  {editingUser?.id === user.id
+                                    ? user.password
+                                    : "*****"}
+                                </TableCell>
+                                <TableCell>{user.role}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => setEditingUser(user)}
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Edit user
+                                          </span>
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>Edit User</DialogTitle>
+                                        </DialogHeader>
+                                        <form
+                                          onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(
+                                              e.currentTarget
+                                            );
+                                            formData.append(
+                                              "id",
+                                              user.id.toString()
+                                            );
+                                            handleEditUser(formData);
+                                          }}
+                                          className="space-y-4"
+                                        >
+                                          <div>
+                                            <label
+                                              htmlFor="editUsername"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Username
+                                            </label>
+                                            <Input
+                                              id="editUsername"
+                                              name="username"
+                                              defaultValue={user.username}
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editEmail"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Email
+                                            </label>
+                                            <Input
+                                              id="editEmail"
+                                              name="email"
+                                              type="email"
+                                              defaultValue={user.email}
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editPassword"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Password
+                                            </label>
+                                            <Input
+                                              id="editPassword"
+                                              name="password"
+                                              type="password"
+                                              defaultValue={user.password}
+                                              required
+                                            />
+                                          </div>
+                                          <div>
+                                            <label
+                                              htmlFor="editRole"
+                                              className="block text-sm font-medium text-gray-700"
+                                            >
+                                              Role
+                                            </label>
+                                            <select
+                                              id="editRole"
+                                              name="role"
+                                              defaultValue={user.role}
+                                              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                              required
+                                            >
+                                              <option value="admin">
+                                                Admin
+                                              </option>
+                                              <option value="veterinarian">
+                                                Veterinarian
+                                              </option>
+                                              <option value="staff">
+                                                Staff
+                                              </option>
+                                            </select>
+                                          </div>
+                                          <Button type="submit">
+                                            Update User
+                                          </Button>
+                                        </form>
+                                      </DialogContent>
+                                    </Dialog>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDeleteUser(user.id)}
+                                    >
+                                      <Trash className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Delete user
+                                      </span>
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -2977,7 +3349,6 @@ export function AdminDashboard() {
           </main>
         </div>
 
-        {/* Messaging window (keep it outside of the Tabs) */}
         <Dialog>
           <DialogTrigger asChild>
             <Button className="fixed bottom-4 right-4" size="icon">
