@@ -275,9 +275,7 @@ export default function VetClinicLanding() {
                 Our Expertise
               </h2>
               <p className="text-muted-foreground max-w-[600px] mb-12">
-                Our experience, expertise, and track record make us the perfect
-                partner to professionally handle everything from minor repairs
-                to a grassroots plant addition.
+              Our experience, expertise, and track record make us the perfect partner to professionally handle everything from routine check-ups to complex veterinary procedures.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

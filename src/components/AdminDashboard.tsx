@@ -646,21 +646,37 @@ export function AdminDashboard() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
+  const formatDate = (timestamp: string | number) => {
+    try {
+      // If the timestamp is a string and looks like an ISO 8601 date string
+      const date = new Date(timestamp);
+  
+      // Validate the date
+      if (isNaN(date.getTime())) {
+        return "Invalid Date";
+      }
+  
+      // Format the date
+      return new Intl.DateTimeFormat("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      }).format(date)
+      .toLowerCase()  // Convert AM/PM to lowercase
+      .replace(',', ', ')  // Ensure correct spacing after the comma
+      .replace(/\s*am/i, 'am')  // Ensure no extra spaces before 'am'
+      .replace(/\s*pm/i, 'pm');  // Ensure no extra spaces before 'pm'
+  
+    } catch (error) {
+      console.error("Date formatting error:", error);
       return "Invalid Date";
     }
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      timeZoneName: "short",
-    }).format(date);
   };
+  
+  
 
   const fetchVaccinations = async () => {
     setIsLoading(true);
