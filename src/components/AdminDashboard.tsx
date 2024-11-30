@@ -226,6 +226,8 @@ export function AdminDashboard() {
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isAddPetDialogOpen, setIsAddPetDialogOpen] = useState(false);
+  
   // const [userRole, setUserRole] = useState<UserRole | null>(null);
   // const [deletingNotificationId, setDeletingNotificationId] = useState<
   //   number | null
@@ -249,6 +251,7 @@ export function AdminDashboard() {
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+  const [isEditPetDialogOpen, setIsEditPetDialogOpen] = useState(false);
   // const [uploadImage, setUploadImage] = useState({ imageUrl: "", petId: "" });
 
   useEffect(() => {
@@ -370,19 +373,7 @@ export function AdminDashboard() {
     setSelectedPet(null);
   };
 
-  const fetchOwners = async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const response = await api.get<Owner[]>("/api/profiles")
-      setOwners(response.data)
-    } catch (err) {
-      console.error("Error fetching owners:", err)
-      setError(`An error occurred while fetching owners: ${err instanceof Error ? err.message : String(err)}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+
   // const handleAddOwner = async (formData: FormData) => {
   //   setIsLoading(true);
   //   setError(null);
@@ -406,60 +397,53 @@ export function AdminDashboard() {
   //   }
   // };
 
+  const fetchOwners = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.get<Owner[]>("/api/profiles");
+      setOwners(response.data);
+    } catch (err) {
+      console.error("Error fetching owners:", err);
+      setError(`An error occurred while fetching owners: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   const handleEditOwner = async (formData: FormData) => {
     if (!editingOwner) return;
     setIsLoading(true);
     setError(null);
     try {
       const updatedOwnerData = Object.fromEntries(formData);
-      const response = await api.put<Owner>(
-        `/api/profiles/${editingOwner.id}`,
-        updatedOwnerData
-      );
-      if (response.status === 200) {
-        setOwners(
-          owners.map((owner) =>
-            owner.id === editingOwner.id ? response.data : owner
-          )
-        );
-        setEditingOwner(null);
-      } else {
-        throw new Error(`Failed to update owner. Status: ${response.status}`);
-      }
+      const response = await api.put<Owner>(`/api/profiles/${editingOwner.id}`, updatedOwnerData);
+      setOwners(owners.map(owner => owner.id === editingOwner.id ? response.data : owner));
+      setEditingOwner(null);
+      setIsEditDialogOpen(false);
     } catch (err) {
       console.error("Error updating owner:", err);
-      setError(
-        `An error occurred while updating the owner: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
+      setError(`An error occurred while updating the owner: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteOwner = async (ownerId: string) => {
+    if (!confirm("Are you sure you want to delete this owner?")) return;
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.delete(`/api/profiles/${ownerId}`);
-      if (response.status === 200) {
-        setOwners(owners.filter((owner) => owner.id !== ownerId));
-      } else {
-        throw new Error(`Failed to delete owner. Status: ${response.status}`);
-      }
+      await api.delete(`/api/profiles/${ownerId}`);
+      setOwners(owners.filter(owner => owner.id !== ownerId));
     } catch (err) {
       console.error("Error deleting owner:", err);
-      setError(
-        `An error occurred while deleting the owner: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
+      setError(`An error occurred while deleting the owner: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
     }
   };
-
 
 
   const handlePetSelect = (petId: string) => {
@@ -469,102 +453,80 @@ export function AdminDashboard() {
 
   // const filteredPets = selectedOwner ? pets.filter(pet => pet.ownerid === selectedOwner.id) : pets;
 
-
   const fetchPets = async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const response = await api.get<Pet[]>("/api/pets")
-      setPets(response.data)
-    } catch (err) {
-      console.error("Error fetching pets:", err)
-      setError(`An error occurred while fetching pets: ${err instanceof Error ? err.message : String(err)}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-  
-  const handleAddPet = async (formData: FormData) => {
     setIsLoading(true);
     setError(null);
     try {
-      const newPetData = Object.fromEntries(formData);
-      const response = await api.post<Pet>("/api/pets", newPetData);
-      if (response.status === 201) {
-        setPets([...pets, response.data]);
-        setTotalPets(totalPets + 1);
-        setNewPetsCount(newPetsCount + 1);
-        setIsAddDialogOpen(false);
-      } else {
-        throw new Error(`Failed to add pet. Status: ${response.status}`);
-      }
+      const response = await api.get<Pet[]>("/api/pets");
+      setPets(response.data);
     } catch (err) {
-      console.error("Error adding pet:", err);
-      setError(
-        `An error occurred while adding the pet: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
+      console.error("Error fetching pets:", err);
+      setError(`An error occurred while fetching pets: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleEditPet = async (formData: FormData) => {
+  const handleAddPet = async (petData: Record<string, string | File>) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      if (!petData.ownerid) {
+        throw new Error("Owner is required");
+      }
+      const response = await api.post<Pet>("/api/pets", petData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      setPets([...pets, response.data]);
+      setIsAddPetDialogOpen(false);
+    } catch (err) {
+      console.error("Error adding pet:", err);
+      setError(`An error occurred while adding the pet: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditPet = async (petData: Record<string, string | File>) => {
     if (!editingPet) return;
     setIsLoading(true);
     setError(null);
     try {
-      const updatedPetData = Object.fromEntries(formData);
-      const response = await api.put<Pet>(
-        `/api/pets/${editingPet.id}`,
-        updatedPetData
-      );
-      if (response.status === 200) {
-        setPets(
-          pets.map((pet) => (pet.id === editingPet.id ? response.data : pet))
-        );
-        setEditingPet(null);
-        setIsEditDialogOpen(false);
-      } else {
-        throw new Error(`Failed to update pet. Status: ${response.status}`);
+      if (!petData.ownerid) {
+        throw new Error("Owner is required");
       }
+      const response = await api.put<Pet>(`/api/pets/${editingPet.id}`, petData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      setPets(pets.map(pet => pet.id === editingPet.id ? response.data : pet));
+      setEditingPet(null);
+      setIsEditPetDialogOpen(false);
     } catch (err) {
       console.error("Error updating pet:", err);
-      setError(
-        `An error occurred while updating the pet: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const handleDeletePet = async (petId: string) => {
-    if (!confirm("Are you sure you want to delete this pet?")) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await api.delete(`/api/pets/${petId}`);
-      if (response.status === 200) {
-        setPets(pets.filter((pet) => pet.id !== petId));
-        setTotalPets(totalPets - 1);
-      } else {
-        throw new Error(`Failed to delete pet. Status: ${response.status}`);
-      }
-    } catch (err) {
-      console.error("Error deleting pet:", err);
-      setError(
-        `An error occurred while deleting the pet: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
+      setError(`An error occurred while updating the pet: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleDeletePet = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this pet?")) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.delete(`/api/pets/${id}`);
+      setPets(pets.filter(pet => pet.id !== id));
+    } catch (err) {
+      console.error("Error deleting pet:", err);
+      setError(`An error occurred while deleting the pet: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const fetchNotifications = async () => {
     setIsLoading(true);
     setError(null);
@@ -1711,304 +1673,16 @@ onClick={() => handleDeleteAppointment(appointment.id)}
 </TabsContent>
 
 <TabsContent value="owners">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Owners</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-semibold">Owner List</h3>
-                        
-                      </div>
-                      {isLoading ? (
-                        <div className="flex justify-center items-center h-32">
-                          <p className="text-lg text-gray-500">
-                            Loading owners...
-                          </p>
-                        </div>
-                      ) : error ? (
-                        <div
-                          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-                          role="alert"
-                        >
-                          <strong className="font-bold">Error:</strong>
-                          <span className="block sm:inline"> {error}</span>
-                        </div>
-                      ) : (
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Name</TableHead>
-                              <TableHead>Contact</TableHead>
-                              <TableHead>Pets</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {owners.map((owner) => (
-                              <TableRow key={owner.id}>
-                                <TableCell>
-                                  <div className="flex items-center space-x-3">
-                                    <Avatar>
-                                      <AvatarImage
-                                        src={
-                                          owner.profilePicture ||
-                                          "/placeholder-user.jpg"
-                                        }
-                                        alt={`${owner.firstName} ${
-                                          owner.lastName || ""
-                                        }`}
-                                      />
-                                      <AvatarFallback>
-                                        {owner.firstName?.charAt(0)}
-                                        {owner.lastName
-                                          ? owner.lastName?.charAt(0)
-                                          : ""}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <span>
-                                      {owner.firstName} {owner.lastName || ""}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  {/* <div>{owner.email}</div> */}
-                                  <div>{owner.contact}</div>
-                                </TableCell>
-                                <TableCell>
-                                  {owner.pets?.map((pet) => pet.name).join(", ")}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center space-x-2">
-                                    <Dialog>
-                                      <DialogTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => setEditingOwner(owner)}
-                                        >
-                                          <Edit className="h-4 w-4" />
-                                          <span className="sr-only">
-                                            Edit owner
-                                          </span>
-                                        </Button>
-                                      </DialogTrigger>
-                                      <DialogContent>
-                                        <DialogHeader>
-                                          <DialogTitle>Edit Owner</DialogTitle>
-                                        </DialogHeader>
-                                        <form
-                                          onSubmit={(e) => {
-                                            e.preventDefault();
-                                            const formData = new FormData(
-                                              e.currentTarget
-                                            );
-                                            formData.append("id", owner.id);
-                                            handleEditOwner(formData);
-                                          }}
-                                          className="space-y-4"
-                                        >
-                                          <div>
-                                            <label
-                                              htmlFor="editFirstName"
-                                              className="block text-sm font-medium text-gray-700"
-                                            >
-                                              First Name
-                                            </label>
-                                            <Input
-                                              id="editFirstName"
-                                              name="firstName"
-                                              defaultValue={
-                                                owner.firstName as string
-                                              }
-                                              required
-                                            />
-                                          </div>
-                                          <div>
-                                            <label
-                                              htmlFor="editLastName"
-                                              className="block text-sm font-medium text-gray-700"
-                                            >
-                                              Last Name
-                                            </label>
-                                            <Input
-                                              id="editLastName"
-                                              name="lastName"
-                                              defaultValue={
-                                                owner.lastName || ""
-                                              }
-                                            />
-                                          </div>
-                                          {/* <div>
-                                            <label
-                                              htmlFor="editEmail"
-                                              className="block text-sm font-medium text-gray-700"
-                                            >
-                                              Email
-                                            </label>
-                                            <Input
-                                              id="editEmail"
-                                              name="email"
-                                              type="email"
-                                              defaultValue={owner.email}
-                                              required
-                                            />
-                                          </div> */}
-                                          <div>
-                                            <label
-                                              htmlFor="editPhone"
-                                              className="block text-sm font-medium text-gray-700"
-                                            >
-                                              Phone
-                                            </label>
-                                            <Input
-                                              id="editPhone"
-                                              name="phone"
-                                              type="tel"
-                                              defaultValue={owner.contact || ""}
-                                            />
-                                          </div>
-                                          <Button type="submit">
-                                            Update Owner
-                                          </Button>
-                                        </form>
-                                      </DialogContent>
-                                    </Dialog>
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                          <Trash className="h-4 w-4" />
-                                          <span className="sr-only">
-                                            Delete owner
-                                          </span>
-                                        </Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>
-                                            Are you absolutely sure?
-                                          </AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            This action cannot be undone. This
-                                            will permanently delete the owner
-                                            and remove the data from our
-                                            servers.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>
-                                            Cancel
-                                          </AlertDialogCancel>
-                                          <AlertDialogAction
-                                            onClick={() =>
-                                              handleDeleteOwner(owner.id)
-                                            }
-                                          >
-                                            Delete
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="pets">
         <Card>
           <CardHeader>
-            <CardTitle>Pets</CardTitle>
-            <CardDescription>Manage pets in your system</CardDescription>
+            <CardTitle>Owners</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Pet List</h3>
-                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Pet
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add New Pet</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={(e) => {
-                      e.preventDefault();
-                      const formData = new FormData(e.currentTarget);
-                      handleAddPet(formData);
-                    }} className="space-y-4">
-                      <div>
-                        <Label htmlFor="name">Pet Name</Label>
-                        <Input id="name" name="name" required />
-                      </div>
-                      <div>
-                        <Label htmlFor="type">Pet Type</Label>
-                        <Select name="type">
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select pet type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {petTypeOptions.map((type) => (
-                              <SelectItem key={type} value={type}>
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="breed">Breed</Label>
-                        <Input id="breed" name="breed" />
-                      </div>
-                      <div>
-                        <Label htmlFor="gender">Gender</Label>
-                        <Select name="gender">
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select gender" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {genderOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="ownerid">Owner</Label>
-                        <Select name="ownerid" required>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an owner" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {owners.map((owner) => (
-                              <SelectItem key={owner.id} value={owner.id}>
-                                {owner.firstName} {owner.lastName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <Button type="submit">Add Pet</Button>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-              </div>
+              <h3 className="text-lg font-semibold mb-4">Owner List</h3>
               {isLoading ? (
                 <div className="flex justify-center items-center h-32">
-                  <p className="text-lg text-gray-500">Loading pets...</p>
+                  <p className="text-lg text-gray-500">Loading owners...</p>
                 </div>
               ) : error ? (
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
@@ -2020,118 +1694,86 @@ onClick={() => handleDeleteAppointment(appointment.id)}
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Breed</TableHead>
-                      <TableHead>Owner</TableHead>
-                      <TableHead>Gender</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Pets</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pets.map((pet) => (
-                      <TableRow key={pet.id}>
-                        <TableCell>{pet.name}</TableCell>
-                        <TableCell>{pet.type}</TableCell>
-                        <TableCell>{pet.breed}</TableCell>
+                    {owners.map((owner) => (
+                      <TableRow key={owner.id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
                             <Avatar>
-                              <AvatarImage src={pet.owner?.profilePicture || "/placeholder-user.jpg"} alt={`${pet.owner?.firstName || "Unknown"} ${pet.owner?.lastName || "Owner"}`} />
-                              <AvatarFallback>{pet.owner?.firstName?.[0] || ""}{pet.owner?.lastName?.[0] || ""}</AvatarFallback>
+                              <AvatarImage src={owner.profilePicture || "/placeholder-user.jpg"} alt={`${owner.firstName} ${owner.lastName || ""}`} />
+                              <AvatarFallback>{owner.firstName?.charAt(0)}{owner.lastName?.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <span>
-                              {pet.owner
-                                ? `${pet.owner.firstName || ""} ${pet.owner.lastName || ""}`.trim() || "Unnamed Owner"
-                                : "No Owner"}
-                            </span>
+                            <span>{owner.firstName} {owner.lastName || ""}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{pet.gender}</TableCell>
+                        <TableCell>
+                         
+                          <div>{owner.contact}</div>
+                        </TableCell>
+                        <TableCell>
+                          {owner.pets?.map((pet) => pet.name).join(", ")}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                            <Dialog>
                               <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon" onClick={() => setEditingPet(pet)}>
+                                <Button variant="ghost" size="icon" onClick={() => setEditingOwner(owner)}>
                                   <Edit className="h-4 w-4" />
-                                  <span className="sr-only">Edit pet</span>
+                                  <span className="sr-only">Edit owner</span>
                                 </Button>
                               </DialogTrigger>
                               <DialogContent>
                                 <DialogHeader>
-                                  <DialogTitle>Edit Pet</DialogTitle>
+                                  <DialogTitle>Edit Owner</DialogTitle>
                                 </DialogHeader>
-                                {editingPet && (
-                                  <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const formData = new FormData(e.currentTarget);
-                                    handleEditPet(formData);
-                                  }} className="space-y-4">
-                                    <div>
-                                      <Label htmlFor="editName">Pet Name</Label>
-                                      <Input id="editName" name="name" defaultValue={editingPet.name} required />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="editType">Pet Type</Label>
-                                      <Select name="type" defaultValue={editingPet.type}>
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select pet type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {petTypeOptions.map((type) => (
-                                            <SelectItem key={type} value={type}>
-                                              {type.charAt(0).toUpperCase() + type.slice(1)}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="editBreed">Breed</Label>
-                                      <Input id="editBreed" name="breed" defaultValue={editingPet.breed || ""} />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="editGender">Gender</Label>
-                                      <Select name="gender" defaultValue={editingPet.gender || ""}>
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select gender" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {genderOptions.map((option) => (
-                                            <SelectItem key={option.value} value={option.value}>
-                                              {option.label}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="editOwnerid">Owner</Label>
-                                      <Select name="ownerid" defaultValue={editingPet.ownerid}>
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select an owner" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {owners.map((owner) => (
-                                            <SelectItem key={owner.id} value={owner.id}>
-                                              {owner.firstName} {owner.lastName}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <Button type="submit">Update Pet</Button>
-                                  </form>
-                                )}
+                                <form onSubmit={(e) => {
+                                  e.preventDefault();
+                                  const formData = new FormData(e.currentTarget);
+                                  formData.append("id", owner.id);
+                                  handleEditOwner(formData);
+                                }} className="space-y-4">
+                                  <div>
+                                    <Label htmlFor="editFirstName">First Name</Label>
+                                    <Input id="editFirstName" name="firstName" defaultValue={owner.firstName as string} required />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="editLastName">Last Name</Label>
+                                    <Input id="editLastName" name="lastName" defaultValue={owner.lastName || ""} />
+                                  </div>
+
+                                  <div>
+                                    <Label htmlFor="editContact">Phone</Label>
+                                    <Input id="editContact" name="contact" type="tel" defaultValue={owner.contact || ""} />
+                                  </div>
+                                  <Button type="submit">Update Owner</Button>
+                                </form>
                               </DialogContent>
                             </Dialog>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeletePet(pet.id)}
-                            >
-                              <Trash className="h-4 w-4" />
-                              <span className="sr-only">Delete pet</span>
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <Trash className="h-4 w-4" />
+                                  <span className="sr-only">Delete owner</span>
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the owner and remove the data from our servers.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteOwner(owner.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -2143,6 +1785,237 @@ onClick={() => handleDeleteAppointment(appointment.id)}
           </CardContent>
         </Card>
       </TabsContent>
+
+      <TabsContent value="pets">
+      <Card>
+      <CardHeader>
+        <CardTitle>Pets</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Pet List</h3>
+            <Dialog open={isAddPetDialogOpen} onOpenChange={setIsAddPetDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Pet
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Pet</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const petData = Object.fromEntries(formData);
+                  handleAddPet(petData);
+                }} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Pet Name</Label>
+                    <Input id="name" name="name" placeholder="Enter pet name" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Pet Type</Label>
+                    <Select name="type" required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select pet type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {petTypeOptions.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="breed">Breed</Label>
+                    <Input id="breed" name="breed" placeholder="Enter breed" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select name="gender">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {genderOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ownerid">Owner</Label>
+                    <Select name="ownerid" required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an owner" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {owners.map((owner) => (
+                          <SelectItem key={owner.id} value={owner.id}>
+                            {owner.firstName} {owner.lastName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button type="submit" className="w-full">Add Pet</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-32">
+              <p className="text-lg text-gray-500">Loading pets...</p>
+            </div>
+          ) : error ? (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">Error:</strong>
+              <span className="block sm:inline"> {error}</span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Breed</TableHead>
+                  <TableHead>Owner</TableHead>
+                  <TableHead>Gender</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pets.map((pet) => (
+                  <TableRow key={pet.id}>
+                    <TableCell>{pet.name}</TableCell>
+                    <TableCell>{pet.type}</TableCell>
+                    <TableCell>{pet.breed}</TableCell>
+                    <TableCell>
+                      {pet.owner ? `${pet.owner.firstName} ${pet.owner.lastName}` : 'N/A'}
+                    </TableCell>
+                    <TableCell>{pet.gender}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Dialog open={isEditPetDialogOpen} onOpenChange={setIsEditPetDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingPet(pet)}
+                            >
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit pet</span>
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Edit Pet</DialogTitle>
+                            </DialogHeader>
+                            {editingPet && (
+                              <form onSubmit={(e) => {
+                                e.preventDefault();
+                                const formData = new FormData(e.currentTarget);
+                                const petData = Object.fromEntries(formData);
+                                handleEditPet(petData);
+                              }} className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="editName">Pet Name</Label>
+                                  <Input
+                                    id="editName"
+                                    name="name"
+                                    defaultValue={editingPet.name}
+                                    placeholder="Enter pet name"
+                                    required
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="editType">Pet Type</Label>
+                                  <Select name="type" defaultValue={editingPet.type}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select pet type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {petTypeOptions.map((type) => (
+                                        <SelectItem key={type} value={type}>
+                                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="editBreed">Breed</Label>
+                                  <Input
+                                    id="editBreed"
+                                    name="breed"
+                                    defaultValue={editingPet.breed || ""}
+                                    placeholder="Enter breed"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="editGender">Gender</Label>
+                                  <Select name="gender" defaultValue={editingPet.gender || ""}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select gender" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {genderOptions.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                          {option.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="editOwnerid">Owner</Label>
+                                  <Select name="ownerid" defaultValue={editingPet.ownerid} required>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select an owner" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {owners.map((owner) => (
+                                        <SelectItem key={owner.id} value={owner.id}>
+                                          {owner.firstName} {owner.lastName}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <Button type="submit" className="w-full">Update Pet</Button>
+                              </form>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeletePet(pet.id)}
+                        >
+                          <Trash className="h-4 w-4" />
+                          <span className="sr-only">Delete pet</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+      </TabsContent>
+
+
 
               <TabsContent value="notifications">
                 <Card>
