@@ -512,8 +512,17 @@ export function AdminDashboard() {
   const handleAddPet = async (formData: FormData) => {
     setIsLoading(true);
     setError(null);
+
+    const dataObject: { [key: string]: string } = {};
+    formData.forEach((value, key) => {
+      dataObject[key] = value.toString();
+    });
+
+    // Display the form data in the console (or wherever needed)
+    console.log(dataObject);
+
     try {
-      const response = await api.post<Pet>("/api/pets", formData);
+      const response = await api.post<Pet>("/api/pets", dataObject);
       setPets([...pets, response.data]);
     } catch (err) {
       console.error("Error adding pet:", err);
