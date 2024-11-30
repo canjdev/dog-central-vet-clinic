@@ -6,7 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, Menu, Stethoscope, Syringe, Scissors, Building2, SmileIcon as Tooth, FlaskConical, Home, ScissorsIcon as Scalpel, Radio, Zap } from 'lucide-react';
+import {
+  Send,
+  Menu,
+  Stethoscope,
+  Syringe,
+  Scissors,
+  Building2,
+  SmileIcon as Tooth,
+  FlaskConical,
+  Home,
+  ScissorsIcon as Scalpel,
+  Radio,
+  Zap,
+} from "lucide-react";
 import { services, vets, helpers } from "@/utils/sharedUtils";
 import {
   Carousel,
@@ -15,7 +28,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Quote } from 'lucide-react';
+import { Quote } from "lucide-react";
 import { ClinicLocations } from "@/components/ClinicLocations";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/config/api";
@@ -88,28 +101,9 @@ export default function VetClinicLanding() {
       setIsLoading(true);
       setError(null);
       try {
-        const petsResponse = await fetch("/api/pets");
-        const petsData = await petsResponse.json();
+        const response = await api.get<GalleryItem[]>("/api/galleries");
 
-        const ownersResponse = await fetch("/api/profiles");
-        const ownersData = await ownersResponse.json();
-
-        const galleryResponse = await fetch("/api/galleries");
-        const galleryData = await galleryResponse.json();
-
-        const combinedData = galleryData.map((item: GalleryItem) => {
-          const pet = petsData.find((p: Pet) => p.id === item.pet.id);
-          const owner = ownersData.find((o: Owner) => o.id === pet.ownerid);
-          return {
-            ...item,
-            pet: {
-              ...pet,
-              owner,
-            },
-          };
-        });
-
-        setGalleryItems(combinedData);
+        setGalleryItems(response.data);
       } catch (error) {
         console.error("Error fetching gallery items:", error);
         setError("Failed to load gallery items. Please try again later.");
@@ -157,7 +151,7 @@ export default function VetClinicLanding() {
   );
 
   const handleLogin = () => {
-    navigate('/login');
+    navigate("/login");
   };
 
   const handleLogout = async () => {
@@ -172,7 +166,7 @@ export default function VetClinicLanding() {
       // TODO: Implement booking logic for authenticated users
       console.log("Implement booking logic here");
     } else {
-      navigate('/login');
+      navigate("/login");
     }
   };
 
@@ -275,12 +269,15 @@ export default function VetClinicLanding() {
                 Our Expertise
               </h2>
               <p className="text-muted-foreground max-w-[600px] mb-12">
-              Our experience, expertise, and track record make us the perfect partner to professionally handle everything from routine check-ups to complex veterinary procedures.
+                Our experience, expertise, and track record make us the perfect
+                partner to professionally handle everything from routine
+                check-ups to complex veterinary procedures.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {services.map((service, index) => {
-                  const IconComponent = serviceIcons[service.name as keyof typeof serviceIcons];
+                  const IconComponent =
+                    serviceIcons[service.name as keyof typeof serviceIcons];
 
                   return (
                     <div
@@ -561,4 +558,3 @@ export default function VetClinicLanding() {
     </div>
   );
 }
-
