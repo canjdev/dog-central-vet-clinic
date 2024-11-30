@@ -522,8 +522,9 @@ export function AdminDashboard() {
     console.log(dataObject);
 
     try {
-      const response = await api.post<Pet>("/api/pets", dataObject);
-      setPets([...pets, response.data]);
+      await api.post<Pet>("/api/pets", dataObject);
+      // setPets([...pets, response.data]);
+      fetchPets();
     } catch (err) {
       console.error("Error adding pet:", err);
       setError(
@@ -547,8 +548,9 @@ export function AdminDashboard() {
     console.log(dataObject);
 
     try {
-      const response = await api.put<Pet>(`/api/pets/${id}`, dataObject);
-      setPets(pets.map((pet) => (pet.id === id ? response.data : pet)));
+      await api.put<Pet>(`/api/pets/${id}`, dataObject);
+      // setPets(pets.map((pet) => (pet.id === id ? response.data : pet)));
+      fetchPets();
     } catch (err) {
       console.error("Error updating pet:", err);
       setError(
