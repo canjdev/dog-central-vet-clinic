@@ -60,6 +60,7 @@ import {
   Send,
   Bell,
   // Check,
+  
 } from "lucide-react";
 import {
   Table,
@@ -645,21 +646,37 @@ export function AdminDashboard() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
+  const formatDate = (timestamp: string | number) => {
+    try {
+      // If the timestamp is a string and looks like an ISO 8601 date string
+      const date = new Date(timestamp);
+  
+      // Validate the date
+      if (isNaN(date.getTime())) {
+        return "Invalid Date";
+      }
+  
+      // Format the date
+      return new Intl.DateTimeFormat("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      }).format(date)
+      .toLowerCase()  // Convert AM/PM to lowercase
+      .replace(',', ', ')  // Ensure correct spacing after the comma
+      .replace(/\s*am/i, 'am')  // Ensure no extra spaces before 'am'
+      .replace(/\s*pm/i, 'pm');  // Ensure no extra spaces before 'pm'
+  
+    } catch (error) {
+      console.error("Date formatting error:", error);
       return "Invalid Date";
     }
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      timeZoneName: "short",
-    }).format(date);
   };
+  
+  
 
   const fetchVaccinations = async () => {
     setIsLoading(true);
@@ -874,7 +891,6 @@ export function AdminDashboard() {
     }
   };
 
-
   const fetchGallery = async () => {
     setIsLoading(true);
     setError(null);
@@ -908,14 +924,17 @@ export function AdminDashboard() {
     }
   };
 
-  const handleEditGallery = async (formData: FormData) => {
+  const handleEditGallery = async (imageUrl: string) => {
     if (!editingGalleryItem) return;
     setIsLoading(true);
     setError(null);
     try {
       const response = await api.put<GalleryItem>(
         `/api/gallery/${editingGalleryItem.id}`,
-        formData
+        {
+          imageUrl,
+          petId: editingGalleryItem.pet.id,
+        }
       );
       setGalleryItems(
         galleryItems.map((item) =>
@@ -923,6 +942,7 @@ export function AdminDashboard() {
         )
       );
       setEditingGalleryItem(null);
+      setIsSuccessDialogOpen(true);
     } catch (err) {
       console.error("Error updating gallery item:", err);
       setError("An error occurred while updating the gallery item");
@@ -2367,186 +2387,148 @@ onClick={() => handleDeleteAppointment(appointment.id)}
               </TabsContent>
 
               <TabsContent value="gallery">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Gallery</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-semibold">Pet Gallery</h3>
-                        <Dialog
-                          open={isAddDialogOpen}
-                          onOpenChange={setIsAddDialogOpen}
-                        >
+      <Card>
+        <CardHeader>
+          <CardTitle>Gallery</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Pet Gallery</h3>
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Image
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Image</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <Select onValueChange={(value) => setSelectedPetId(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a pet" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pets.map((pet) => (
+                          <SelectItem key={pet.id} value={pet.id}>
+                            {pet.name} ({pet.type})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <UploadButton
+                      endpoint="galleryUpload"
+                      onClientUploadComplete={async (res) => {
+                        if (res && res.length > 0 && selectedPetId) {
+                          try {
+                            await handleAddGallery(res[0].url, selectedPetId);
+                          } catch (err) {
+                            console.error("Error adding gallery item:", err);
+                            setError("An error occurred while adding the gallery item");
+                          }
+                        }
+                      }}
+                      onUploadError={(error: Error) => {
+                        console.error("Error uploading file:", error);
+                        setError("An error occurred while uploading the file");
+                      }}
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-32">
+                <p className="text-lg text-gray-500">Loading gallery...</p>
+              </div>
+            ) : error ? (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <strong className="font-bold">Error:</strong>
+                <span className="block sm:inline"> {error}</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {galleryItems.map((item) => (
+                  <div key={item.id} className="relative group overflow-hidden rounded-lg aspect-[9/16]">
+                    <img
+                      src={item.imageUrl}
+                      alt={`${item.pet?.name}'s photo`}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <p className="text-white text-center p-2">
+                        {item.pet?.name} ({item.pet?.type})
+                      </p>
+                      <div className="mt-2 space-x-2">
+                        <Dialog>
                           <DialogTrigger asChild>
-                            <Button>
-                              <Plus className="mr-2 h-4 w-4" />
-                              Add Image
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => setEditingGalleryItem(item)}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Add New Image</DialogTitle>
+                              <DialogTitle>Edit Gallery Item</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4">
-                              <Select
-                                onValueChange={(value) =>
-                                  setSelectedPetId(value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a pet" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {pets.map((pet) => (
-                                    <SelectItem key={pet.id} value={pet.id}>
-                                      {pet.name} ({pet.type})
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <p>Current pet: {item.pet?.name} ({item.pet?.type})</p>
                               <UploadButton
                                 endpoint="galleryUpload"
-                                onClientUploadComplete={async (data) => {
-                                  if (
-                                    data &&
-                                    data.length > 0 &&
-                                    selectedPetId
-                                  ) {
-                                    await handleAddGallery(
-                                      data[0].url,
-                                      selectedPetId
-                                    );
+                                onClientUploadComplete={async (res) => {
+                                  if (res && res.length > 0) {
+                                    try {
+                                      await handleEditGallery(res[0].url);
+                                    } catch (err) {
+                                      console.error("Error updating gallery item:", err);
+                                      setError("An error occurred while updating the gallery item");
+                                    }
                                   }
+                                }}
+                                onUploadError={(error: Error) => {
+                                  console.error("Error uploading file:", error);
+                                  setError("An error occurred while uploading the file");
                                 }}
                               />
                             </div>
                           </DialogContent>
                         </Dialog>
-                      </div>
-                      {isLoading ? (
-                        <div className="flex justify-center items-center h-32">
-                          <p className="text-lg text-gray-500">
-                            Loading gallery...
-                          </p>
-                        </div>
-                      ) : error ? (
-                        <div
-                          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-                          role="alert"
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteGallery(item.id)}
                         >
-                          <strong className="font-bold">Error:</strong>
-                          <span className="block sm:inline"> {error}</span>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {galleryItems.map((item) => (
-                            <div
-                              key={item.id}
-                              className="relative group overflow-hidden rounded-lg aspect-[9/16]"
-                            >
-                              <img
-                                src={item.imageUrl}
-                                alt={`${item.pet.name}'s photo`}
-                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                              />
-                              <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <p className="text-white text-center p-2">
-                                  {item.pet.name} ({item.pet.type})
-                                </p>
-                                <div className="mt-2 space-x-2">
-                                  <Dialog>
-                                    <DialogTrigger asChild>
-                                      <Button
-                                        variant="secondary"
-                                        size="sm"
-                                        onClick={() =>
-                                          setEditingGalleryItem(item)
-                                        }
-                                      >
-                                        <Edit className="h-4 w-4 mr-2" />
-                                        Edit
-                                      </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                      <DialogHeader>
-                                        <DialogTitle>
-                                          Edit Gallery Item
-                                        </DialogTitle>
-                                      </DialogHeader>
-                                      <form
-                                        onSubmit={(e) => {
-                                          e.preventDefault();
-                                          const formData = new FormData(
-                                            e.currentTarget
-                                          );
-                                          handleEditGallery(formData);
-                                        }}
-                                        className="space-y-4"
-                                      >
-                                        <Select
-                                          onValueChange={(value) => {
-                                            const formData = new FormData();
-                                            formData.append("petId", value);
-                                            handleEditGallery(formData);
-                                          }}
-                                          defaultValue={item.pet.id}
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select a pet" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {pets.map((pet) => (
-                                              <SelectItem
-                                                key={pet.id}
-                                                value={pet.id}
-                                              >
-                                                {pet.name} ({pet.type})
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                        <Button type="submit">
-                                          Update Gallery Item
-                                        </Button>
-                                      </form>
-                                    </DialogContent>
-                                  </Dialog>
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => handleDeleteGallery(item.id)}
-                                  >
-                                    <Trash className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                          <Trash className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-                <Dialog
-                  open={isSuccessDialogOpen}
-                  onOpenChange={setIsSuccessDialogOpen}
-                >
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Success</DialogTitle>
-                    </DialogHeader>
-                    <p>The image was uploaded successfully!</p>
-                    <DialogFooter>
-                      <Button onClick={() => setIsSuccessDialogOpen(false)}>
-                        Close
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </TabsContent>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Success</DialogTitle>
+          </DialogHeader>
+          <p>The image was uploaded successfully!</p>
+          <DialogFooter>
+            <Button onClick={() => setIsSuccessDialogOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </TabsContent>
 
               <TabsContent value="vaccinations">
                 <Card>

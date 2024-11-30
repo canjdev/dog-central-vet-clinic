@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,25 +18,40 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    const response = await api.post<{ isAuthenticated: boolean }>(
-      "/api/auth/",
-      { username, password },
-    );
+    try {
+      const response = await api.post<{ isAuthenticated: boolean }>(
+        "/api/auth/",
+        { username, password },
+      );
 
-    console.log(response);
+      console.log(response);
 
-    if (response.status === 200) {
-      login();
-      navigate("/dashboard");
+      if (response.status === 200) {
+        login();
+        navigate("/dashboard");
+      } else {
+        setError("Invalid username or password. Please try again.");
+      }
+    } catch (err) {
+      setError("An error occurred. Please try again later.");
+    }
+  };
+
+  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSubmit(e);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8F8F8]">
       <Card className="w-full max-w-md mx-4 p-8 bg-white shadow-sm">
-        <h1 className="text-xl font-bold text-center mb-8">
+        <h1 className="text-xl font-bold text-center mb-2">
           Login to Dog Central Veterinary Clinic & Grooming!
         </h1>
+        <p className="text-sm text-gray-600 text-center mb-6">
+          Staff members login only!
+        </p>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <label
@@ -50,6 +65,7 @@ export default function LoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              onKeyPress={handleKeyPress}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
@@ -65,6 +81,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={handleKeyPress}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
@@ -75,7 +92,9 @@ export default function LoginPage() {
           >
             Login
           </Button>
-
+          <p className="text-sm text-gray-600 text-center mt-2 mb-4">
+            If you're a customer, please login through Google!
+          </p>
           <Button className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2">
             <a
               href={`${import.meta.env.VITE_API_BASE_URL}/api/auth/google`}
@@ -112,3 +131,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

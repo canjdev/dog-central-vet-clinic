@@ -18,6 +18,7 @@ import {
 import { Quote } from 'lucide-react';
 import { ClinicLocations } from "@/components/ClinicLocations";
 import { useAuth } from "@/context/AuthContext";
+import api from "@/config/api";
 
 const serviceIcons = {
   "Check Up": Stethoscope,
@@ -71,7 +72,7 @@ export default function VetClinicLanding() {
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -159,8 +160,11 @@ export default function VetClinicLanding() {
     navigate('/login');
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    const response = await api.post("/api/auth/logout");
+    if (response.status === 204) {
+      navigate("/");
+    }
   };
 
   const handleBookAppointment = () => {
@@ -271,9 +275,7 @@ export default function VetClinicLanding() {
                 Our Expertise
               </h2>
               <p className="text-muted-foreground max-w-[600px] mb-12">
-                Our experience, expertise, and track record make us the perfect
-                partner to professionally handle everything from minor repairs
-                to a grassroots plant addition.
+              Our experience, expertise, and track record make us the perfect partner to professionally handle everything from routine check-ups to complex veterinary procedures.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
