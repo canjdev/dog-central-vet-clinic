@@ -25,24 +25,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Bell } from "lucide-react";
+import { Bell } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import api from "@/config/api";
 import { useNavigate } from "react-router-dom";
 
-interface Appointment {
-  id: string;
-  ownerId: string;
-  date: string;
-  time: string;
-  services: string;
-  status: "confirmed" | "cancelled" | "completed" | "pending";
-  notes: string | null;
-  petName: string;
-  petType: string;
-  owner: Owner;
-  pet: Pet;
-}
 interface Owner {
   id: string;
   profilePicture: string | null;
@@ -76,52 +63,32 @@ interface Notification {
   owner: Owner;
 }
 
-// type Services =
-//   | "Check Up"
-//   | "Vaccination"
-//   | "Pet Grooming"
-//   | "Confinement"
-//   | "Dental Cleaning"
-//   | "Laboratory"
-//   | "Pet Boarding"
-//   | "Surgery"
-//   | "Ultrasound"
-//   | "Laser Therapy";
-
-// type AppointmentStatus = "confirmed" | "cancelled" | "completed" | "pending";
-
-// const petTypeOptions = ["cat", "dog", "other"];
-
-// const servicesOptions: Services[] = [
-//   "Check Up",
-//   "Vaccination",
-//   "Pet Grooming",
-//   "Confinement",
-//   "Dental Cleaning",
-//   "Laboratory",
-//   "Pet Boarding",
-//   "Surgery",
-//   "Ultrasound",
-//   "Laser Therapy",
-// ];
-
-// const statusOptions: AppointmentStatus[] = [
-//   "confirmed",
-//   "cancelled",
-//   "completed",
-//   "pending",
-// ];
+interface Appointment {
+  id: string;
+  ownerId: string;
+  date: string;
+  time: string;
+  services: string;
+  status: "confirmed" | "cancelled" | "completed" | "pending";
+  notes: string | null;
+  petName: string;
+  petType: string;
+  owner: Owner;
+  pet: Pet;
+}
 
 export function PetMedicalHistory() {
   const navigate = useNavigate();
   const [owner, setOwner] = useState<Owner | null>(null);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [isPetDialogOpen, setIsPetDialogOpen] = useState(false);
+  const [isAddPetDialogOpen, setIsAddPetDialogOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [pets, setPets] = useState<Pet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
   useEffect(() => {
     fetchLoggedInUserData();
@@ -153,6 +120,7 @@ export function PetMedicalHistory() {
         `/api/notifications/owner/${ownerId}`
       );
       setNotifications(response.data);
+      setHasUnreadNotifications(response.data.some(notification => !notification.read));
     } catch (error) {
       console.error("Error fetching notifications:", error);
     }
@@ -194,6 +162,23 @@ export function PetMedicalHistory() {
       setIsProfileDialogOpen(false);
     } catch (error) {
       console.error("Error updating profile:", error);
+    }
+  };
+
+  const handleAddPet = async (newPet: Omit<Pet, 'id' | 'owner' | 'created_at'>) => {
+    try {
+      if (owner) {
+        const petData = {
+          ...newPet,
+          ownerid: owner.id,
+          profile: null, // Add this line
+        };
+        const response = await api.post<Pet>('/api/pets', petData);
+        setPets([...pets, response.data]);
+        setIsAddPetDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Error adding pet:", error);
     }
   };
 
@@ -336,9 +321,13 @@ export function PetMedicalHistory() {
             />
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className={`w-full ${hasUnreadNotifications ? 'bg-red-500 text-white hover:bg-red-600' : ''}`}
+                >
                   <Bell className="mr-2 h-4 w-4" />
                   Notifications
+                  {hasUnreadNotifications && <span className="ml-2 text-xs bg-white text-red-500 rounded-full px-2 py-1">New</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80">
@@ -390,10 +379,10 @@ export function PetMedicalHistory() {
                       <p>Type: {pet.type}</p>
                       <p>Breed: {pet.breed || "Not specified"}</p>
                       <p>Gender: {pet.gender || "Not specified"}</p>
-                      {/* <p>Bio: {pet.bio}</p> */}
                     </div>
                   ))}
                 </ScrollArea>
+                <Button onClick={() => setIsAddPetDialogOpen(true)} className="mt-4">Add Pet</Button>
               </DialogContent>
             </Dialog>
           </CardContent>
@@ -457,6 +446,53 @@ export function PetMedicalHistory() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={isAddPetDialogOpen} onOpenChange={setIsAddPetDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Pet</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const newPet = {
+              name: formData.get('name') as string,
+              type: formData.get('type') as string,
+              breed: formData.get('breed') as string || null,
+              gender: formData.get('gender') as string || null,
+              bio: formData.get('bio') as string,
+              profile: null,
+              ownerid: owner.id,
+            };
+            handleAddPet(newPet);
+          }}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">Name</Label>
+                <Input id="name" name="name" className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="type" className="text-right">Type</Label>
+                <Input id="type" name="type" className="col-span-3" required />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="breed" className="text-right">Breed</Label>
+                <Input id="breed" name="breed" className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="gender" className="text-right">Gender</Label>
+                <Input id="gender" name="gender" className="col-span-3" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="bio" className="text-right">Bio</Label>
+                <Input id="bio" name="bio" className="col-span-3" />
+              </div>
+            </div>
+            <Button type="submit">Add Pet</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+

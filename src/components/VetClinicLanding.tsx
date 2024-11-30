@@ -94,7 +94,7 @@ export default function VetClinicLanding() {
         const ownersResponse = await fetch("/api/profiles");
         const ownersData = await ownersResponse.json();
 
-        const galleryResponse = await fetch("/api/gallery");
+        const galleryResponse = await fetch("/api/galleries");
         const galleryData = await galleryResponse.json();
 
         const combinedData = galleryData.map((item: GalleryItem) => {
