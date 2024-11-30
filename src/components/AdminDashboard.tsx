@@ -115,12 +115,15 @@ interface Pet {
   name: string;
   type: string;
   breed: string | null;
-  bio: string;
   gender: string | null;
-  owner: Owner;
-  profile: string | null;
   ownerid: string;
   created_at: string;
+  owner: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    profilePicture: string | null;
+  };
 }
 
 interface GalleryItem {
@@ -216,13 +219,13 @@ export function AdminDashboard() {
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [, setIsEditDialogOpen] = useState(false);
   const [owners, setOwners] = useState<Owner[]>([]);
   const [editingOwner, setEditingOwner] = useState<Owner | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
-  const [totalPets, setTotalPets] = useState(0);
-  const [newPetsCount, setNewPetsCount] = useState(0);
+  const [totalPets,] = useState(0);
+  const [newPetsCount, ] = useState(0);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -251,7 +254,7 @@ export function AdminDashboard() {
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
-  const [isEditPetDialogOpen, setIsEditPetDialogOpen] = useState(false);
+  // const [isEditPetDialogOpen, setIsEditPetDialogOpen] = useState(false);
   // const [uploadImage, setUploadImage] = useState({ imageUrl: "", petId: "" });
 
   useEffect(() => {
@@ -457,56 +460,38 @@ export function AdminDashboard() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.get<Pet[]>("/api/pets");
+      const response = await api.get<Pet[]>('/api/pets');
       setPets(response.data);
     } catch (err) {
-      console.error("Error fetching pets:", err);
+      console.error('Error fetching pets:', err);
       setError(`An error occurred while fetching pets: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAddPet = async (petData: Record<string, string | File>) => {
+  const handleAddPet = async (formData: FormData) => {
     setIsLoading(true);
     setError(null);
     try {
-      if (!petData.ownerid) {
-        throw new Error("Owner is required");
-      }
-      const response = await api.post<Pet>("/api/pets", petData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await api.post<Pet>('/api/pets', formData);
       setPets([...pets, response.data]);
-      setIsAddPetDialogOpen(false);
     } catch (err) {
-      console.error("Error adding pet:", err);
+      console.error('Error adding pet:', err);
       setError(`An error occurred while adding the pet: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleEditPet = async (petData: Record<string, string | File>) => {
-    if (!editingPet) return;
+  const handleEditPet = async (id: string, formData: FormData) => {
     setIsLoading(true);
     setError(null);
     try {
-      if (!petData.ownerid) {
-        throw new Error("Owner is required");
-      }
-      const response = await api.put<Pet>(`/api/pets/${editingPet.id}`, petData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      setPets(pets.map(pet => pet.id === editingPet.id ? response.data : pet));
-      setEditingPet(null);
-      setIsEditPetDialogOpen(false);
+      const response = await api.put<Pet>(`/api/pets/${id}`, formData);
+      setPets(pets.map(pet => pet.id === id ? response.data : pet));
     } catch (err) {
-      console.error("Error updating pet:", err);
+      console.error('Error updating pet:', err);
       setError(`An error occurred while updating the pet: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
@@ -514,19 +499,32 @@ export function AdminDashboard() {
   };
 
   const handleDeletePet = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this pet?")) return;
     setIsLoading(true);
     setError(null);
     try {
       await api.delete(`/api/pets/${id}`);
       setPets(pets.filter(pet => pet.id !== id));
     } catch (err) {
-      console.error("Error deleting pet:", err);
+      console.error('Error deleting pet:', err);
       setError(`An error occurred while deleting the pet: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsLoading(false);
     }
   };
+  
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>, isEditing: boolean) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    if (isEditing && editingPet) {
+      handleEditPet(editingPet.id, formData);
+      setEditingPet(null);
+    } else {
+      handleAddPet(formData);
+      setIsAddPetDialogOpen(false);
+    }
+  };
+
+
   const fetchNotifications = async () => {
     setIsLoading(true);
     setError(null);
@@ -1806,15 +1804,10 @@ onClick={() => handleDeleteAppointment(appointment.id)}
                 <DialogHeader>
                   <DialogTitle>Add New Pet</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  const petData = Object.fromEntries(formData);
-                  handleAddPet(petData);
-                }} className="space-y-4">
+                <form onSubmit={(e) => handleFormSubmit(e, false)} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Pet Name</Label>
-                    <Input id="name" name="name" placeholder="Enter pet name" required />
+                    <Input id="name" name="name" required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="type">Pet Type</Label>
@@ -1833,7 +1826,7 @@ onClick={() => handleDeleteAppointment(appointment.id)}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="breed">Breed</Label>
-                    <Input id="breed" name="breed" placeholder="Enter breed" />
+                    <Input id="breed" name="breed" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="gender">Gender</Label>
@@ -1865,7 +1858,7 @@ onClick={() => handleDeleteAppointment(appointment.id)}
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button type="submit" className="w-full">Add Pet</Button>
+                  <Button type="submit">Add Pet</Button>
                 </form>
               </DialogContent>
             </Dialog>
@@ -1898,18 +1891,24 @@ onClick={() => handleDeleteAppointment(appointment.id)}
                     <TableCell>{pet.type}</TableCell>
                     <TableCell>{pet.breed}</TableCell>
                     <TableCell>
-                      {pet.owner ? `${pet.owner.firstName} ${pet.owner.lastName}` : 'N/A'}
+                      <div className="flex items-center space-x-3">
+                        <Avatar>
+                          <AvatarImage src={pet.owner?.profilePicture || "/placeholder-user.jpg"} alt={`${pet.owner?.firstName || "Unknown"} ${pet.owner?.lastName || "Owner"}`} />
+                          <AvatarFallback>{pet.owner?.firstName?.[0] || ""}{pet.owner?.lastName?.[0] || ""}</AvatarFallback>
+                        </Avatar>
+                        <span>
+                          {pet.owner
+                            ? `${pet.owner.firstName || ""} ${pet.owner.lastName || ""}`.trim() || "Unnamed Owner"
+                            : "No Owner"}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>{pet.gender}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Dialog open={isEditPetDialogOpen} onOpenChange={setIsEditPetDialogOpen}>
+                      <div className="flex items-center space-x-2">
+                        <Dialog>
                           <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setEditingPet(pet)}
-                            >
+                            <Button variant="ghost" size="icon" onClick={() => setEditingPet(pet)}>
                               <Edit className="h-4 w-4" />
                               <span className="sr-only">Edit pet</span>
                             </Button>
@@ -1919,21 +1918,10 @@ onClick={() => handleDeleteAppointment(appointment.id)}
                               <DialogTitle>Edit Pet</DialogTitle>
                             </DialogHeader>
                             {editingPet && (
-                              <form onSubmit={(e) => {
-                                e.preventDefault();
-                                const formData = new FormData(e.currentTarget);
-                                const petData = Object.fromEntries(formData);
-                                handleEditPet(petData);
-                              }} className="space-y-4">
+                              <form onSubmit={(e) => handleFormSubmit(e, true)} className="space-y-4">
                                 <div className="space-y-2">
                                   <Label htmlFor="editName">Pet Name</Label>
-                                  <Input
-                                    id="editName"
-                                    name="name"
-                                    defaultValue={editingPet.name}
-                                    placeholder="Enter pet name"
-                                    required
-                                  />
+                                  <Input id="editName" name="name" defaultValue={editingPet.name} required />
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor="editType">Pet Type</Label>
@@ -1952,12 +1940,7 @@ onClick={() => handleDeleteAppointment(appointment.id)}
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor="editBreed">Breed</Label>
-                                  <Input
-                                    id="editBreed"
-                                    name="breed"
-                                    defaultValue={editingPet.breed || ""}
-                                    placeholder="Enter breed"
-                                  />
+                                  <Input id="editBreed" name="breed" defaultValue={editingPet.breed || ""} />
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor="editGender">Gender</Label>
@@ -1976,7 +1959,7 @@ onClick={() => handleDeleteAppointment(appointment.id)}
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor="editOwnerid">Owner</Label>
-                                  <Select name="ownerid" defaultValue={editingPet.ownerid} required>
+                                  <Select name="ownerid" defaultValue={editingPet.ownerid}>
                                     <SelectTrigger>
                                       <SelectValue placeholder="Select an owner" />
                                     </SelectTrigger>
@@ -1989,7 +1972,7 @@ onClick={() => handleDeleteAppointment(appointment.id)}
                                     </SelectContent>
                                   </Select>
                                 </div>
-                                <Button type="submit" className="w-full">Update Pet</Button>
+                                <Button type="submit">Update Pet</Button>
                               </form>
                             )}
                           </DialogContent>
@@ -2012,9 +1995,7 @@ onClick={() => handleDeleteAppointment(appointment.id)}
         </div>
       </CardContent>
     </Card>
-  );
-      </TabsContent>
-
+  </TabsContent>
 
 
               <TabsContent value="notifications">
