@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -25,11 +25,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Bell } from 'lucide-react';
+import { Bell } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import api from "@/config/api";
 import { useNavigate } from "react-router-dom";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Owner {
   id: string;
@@ -51,7 +57,7 @@ interface Pet {
   gender: string | null;
   owner: Owner;
   profile: string | null;
-  ownerid: string;
+  ownerId: string;
   created_at: string;
 }
 
@@ -90,8 +96,8 @@ export function PetMedicalHistory() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
-  const petTypes = ["Dog", "Cat", "Bird", "Fish", "Reptile", "Other"];
-  const petGenders = ["Male", "Female", "Other"];
+  const petTypes = ["dog", "cat", "other"];
+  const petGenders = ["male", "female", "neutered"];
 
   useEffect(() => {
     fetchLoggedInUserData();
@@ -120,10 +126,12 @@ export function PetMedicalHistory() {
   const fetchNotifications = async (ownerId: string) => {
     try {
       const response = await api.get<Notification[]>(
-        `/api/notifications/owner/${ownerId}`
+        `/api/notifications/owner/${ownerId}`,
       );
       setNotifications(response.data);
-      setHasUnreadNotifications(response.data.some(notification => !notification.read));
+      setHasUnreadNotifications(
+        response.data.some((notification) => !notification.read),
+      );
     } catch (error) {
       console.error("Error fetching notifications:", error);
     }
@@ -132,7 +140,7 @@ export function PetMedicalHistory() {
   const fetchAppointments = async (ownerId: string) => {
     try {
       const response = await api.get<Appointment[]>(
-        `/api/appointments/owner/${ownerId}`
+        `/api/appointments/owner/${ownerId}`,
       );
       setAppointments(response.data);
     } catch (error) {
@@ -168,18 +176,14 @@ export function PetMedicalHistory() {
     }
   };
 
-  const handleAddPet = async (newPet: Omit<Pet, 'id' | 'owner' | 'created_at'>) => {
+  const handleAddPet = async (
+    newPet: Omit<Pet, "id" | "owner" | "created_at">,
+  ) => {
+    console.log(newPet);
     try {
-      if (owner) {
-        const petData = {
-          ...newPet,
-          ownerid: owner.id,
-          profile: null, 
-        };
-        const response = await api.post<Pet>('/api/pets', petData);
-        setPets([...pets, response.data]);
-        setIsAddPetDialogOpen(false);
-      }
+      const response = await api.post<Pet>("/api/pets", newPet);
+      setPets([...pets, response.data]);
+      setIsAddPetDialogOpen(false);
     } catch (error) {
       console.error("Error adding pet:", error);
     }
@@ -187,7 +191,7 @@ export function PetMedicalHistory() {
 
   const upcomingAppointment = appointments.find(
     (appointment) =>
-      appointment.status === "confirmed" || appointment.status === "pending"
+      appointment.status === "confirmed" || appointment.status === "pending",
   );
 
   if (isLoading) {
@@ -213,6 +217,33 @@ export function PetMedicalHistory() {
       </div>
     );
   }
+
+  const handleSubmitAddPet = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+    const dataObject: { [key: string]: string } = {};
+
+    formData.forEach((value, key) => {
+      dataObject[key] = value.toString();
+    });
+
+    let petOwner: Owner;
+    api.get<Owner>("/api/users/profile").then((response) => {
+      petOwner = response.data;
+
+      const newPet = {
+        name: formData.get("name") as string,
+        type: formData.get("type") as string,
+        breed: (formData.get("breed") as string) || null,
+        gender: (formData.get("gender") as string) || null,
+        bio: formData.get("bio") as string,
+        profile: null,
+        ownerId: petOwner.id,
+      };
+      handleAddPet(newPet);
+    });
+  };
 
   return (
     <div className="container mx-auto py-8">
@@ -324,13 +355,17 @@ export function PetMedicalHistory() {
             />
             <Popover>
               <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className={`w-full ${hasUnreadNotifications ? 'bg-red-500 text-white hover:bg-red-600' : ''}`}
+                <Button
+                  variant="outline"
+                  className={`w-full ${hasUnreadNotifications ? "bg-red-500 text-white hover:bg-red-600" : ""}`}
                 >
                   <Bell className="mr-2 h-4 w-4" />
                   Notifications
-                  {hasUnreadNotifications && <span className="ml-2 text-xs bg-white text-red-500 rounded-full px-2 py-1">New</span>}
+                  {hasUnreadNotifications && (
+                    <span className="ml-2 text-xs bg-white text-red-500 rounded-full px-2 py-1">
+                      New
+                    </span>
+                  )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80">
@@ -385,7 +420,12 @@ export function PetMedicalHistory() {
                     </div>
                   ))}
                 </ScrollArea>
-                <Button onClick={() => setIsAddPetDialogOpen(true)} className="mt-4">Add Pet</Button>
+                <Button
+                  onClick={() => setIsAddPetDialogOpen(true)}
+                  className="mt-4"
+                >
+                  Add Pet
+                </Button>
               </DialogContent>
             </Dialog>
           </CardContent>
@@ -455,57 +495,58 @@ export function PetMedicalHistory() {
           <DialogHeader>
             <DialogTitle>Add New Pet</DialogTitle>
           </DialogHeader>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            const newPet = {
-              name: formData.get('name') as string,
-              type: formData.get('type') as string,
-              breed: formData.get('breed') as string || null,
-              gender: formData.get('gender') as string || null,
-              bio: formData.get('bio') as string,
-              profile: null,
-              ownerid: owner.id,
-            };
-            handleAddPet(newPet);
-          }}>
+          <form onSubmit={(e) => handleSubmitAddPet(e)}>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">Name</Label>
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
                 <Input id="name" name="name" className="col-span-3" required />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="type" className="text-right">Type</Label>
+                <Label htmlFor="type" className="text-right">
+                  Type
+                </Label>
                 <Select name="type" required>
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select pet type" />
                   </SelectTrigger>
                   <SelectContent>
                     {petTypes.map((type) => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="breed" className="text-right">Breed</Label>
+                <Label htmlFor="breed" className="text-right">
+                  Breed
+                </Label>
                 <Input id="breed" name="breed" className="col-span-3" />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="gender" className="text-right">Gender</Label>
+                <Label htmlFor="gender" className="text-right">
+                  Gender
+                </Label>
                 <Select name="gender">
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select pet gender" />
                   </SelectTrigger>
                   <SelectContent>
                     {petGenders.map((gender) => (
-                      <SelectItem key={gender} value={gender}>{gender}</SelectItem>
+                      <SelectItem key={gender} value={gender}>
+                        {gender}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="bio" className="text-right">Bio</Label>
+                <Label htmlFor="bio" className="text-right">
+                  Bio
+                </Label>
                 <Input id="bio" name="bio" className="col-span-3" />
               </div>
             </div>
@@ -516,4 +557,3 @@ export function PetMedicalHistory() {
     </div>
   );
 }
-
