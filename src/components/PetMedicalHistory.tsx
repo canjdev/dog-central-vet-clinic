@@ -29,6 +29,7 @@ import { Bell } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import api from "@/config/api";
 import { useNavigate } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Owner {
   id: string;
@@ -89,6 +90,8 @@ export function PetMedicalHistory() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+  const petTypes = ["Dog", "Cat", "Bird", "Fish", "Reptile", "Other"];
+  const petGenders = ["Male", "Female", "Other"];
 
   useEffect(() => {
     fetchLoggedInUserData();
@@ -171,7 +174,7 @@ export function PetMedicalHistory() {
         const petData = {
           ...newPet,
           ownerid: owner.id,
-          profile: null, // Add this line
+          profile: null, 
         };
         const response = await api.post<Pet>('/api/pets', petData);
         setPets([...pets, response.data]);
@@ -473,7 +476,16 @@ export function PetMedicalHistory() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="type" className="text-right">Type</Label>
-                <Input id="type" name="type" className="col-span-3" required />
+                <Select name="type" required>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select pet type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {petTypes.map((type) => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="breed" className="text-right">Breed</Label>
@@ -481,7 +493,16 @@ export function PetMedicalHistory() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="gender" className="text-right">Gender</Label>
-                <Input id="gender" name="gender" className="col-span-3" />
+                <Select name="gender">
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select pet gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {petGenders.map((gender) => (
+                      <SelectItem key={gender} value={gender}>{gender}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="bio" className="text-right">Bio</Label>
