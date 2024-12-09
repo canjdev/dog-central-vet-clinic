@@ -88,7 +88,7 @@ export const services: Service[] = [
 export const vets: Vet[] = [
   {
     name: "Dr. Jocelyn G. Ignacio",
-    image: "https://i.ibb.co/6ypbjh6/vet1.png",
+    image: "https://i.ibb.co/Dk5DnmG/vet1.png",
     role: "Lead Veterinarian",
     schedule: [
       { day: "Mon-Fri", hours: "9:00 AM - 5:00 PM" },

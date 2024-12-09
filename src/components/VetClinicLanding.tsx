@@ -231,7 +231,7 @@ export default function VetClinicLanding() {
         <section
           className="w-full h-[600px] bg-cover bg-center relative -mt-20"
           style={{
-            backgroundImage: `linear-gradient(rgba(243, 87, 9, 0.3), rgba(243, 87, 9, 0.3)), url('https://i.ibb.co/DQ0T6Rw/coverpage.jpg')`,
+            backgroundImage: `linear-gradient(rgba(243, 87, 9, 0.3), rgba(243, 87, 9, 0.3)), url('https://i.ibb.co/rvt3Cvq/coverpage.jpg')`,
           }}
         >
           <div className="container px-4 md:px-6 relative z-10 h-full flex items-center justify-center pt-20">
