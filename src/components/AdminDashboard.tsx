@@ -2078,12 +2078,12 @@ export function AdminDashboard() {
                         >
                           <DialogTrigger asChild>
                             <Button>
+                              <Plus className="mr-2 h-4 w-4" />
                               Add Pet
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <Plus className="mr-2 h-4 w-4" />
                               Add Pet
                             </DialogHeader>
                             <form
