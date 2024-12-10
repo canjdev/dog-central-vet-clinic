@@ -2150,7 +2150,7 @@ export function AdminDashboard() {
                                   </SelectContent>
                                 </Select>
                               </div>
-                              <Button type="submit">Add Pet</Button>
+                            /* <Button type="submit">Add Pet</Button> */
                             </form>
                           </DialogContent>
                         </Dialog>
