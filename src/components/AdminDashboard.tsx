@@ -2070,7 +2070,91 @@ export function AdminDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-semibold">Pet List</h3>
+                        <Dialog
+                          open={isAddPetDialogOpen}
+                          onOpenChange={setIsAddPetDialogOpen}
+                        >
+                          <DialogTrigger asChild>
+                            <Button>
+                              Add Pet
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <Plus className="mr-2 h-4 w-4" />
+                              Add Pet
+                            </DialogHeader>
+                            <form
+                              onSubmit={(e) => handleFormSubmit(e, false)}
+                              className="space-y-4"
+                            >
+                              <div className="space-y-2">
+                                <Label htmlFor="name">Pet Name</Label>
+                                <Input id="name" name="name" required />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="type">Pet Type</Label>
+                                <Select name="type" required>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select pet type" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {petTypeOptions.map((type) => (
+                                      <SelectItem key={type} value={type}>
+                                        {type.charAt(0).toUpperCase() +
+                                          type.slice(1)}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="breed">Breed</Label>
+                                <Input id="breed" name="breed" />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="gender">Gender</Label>
+                                <Select name="gender">
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select gender" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {genderOptions.map((option) => (
+                                      <SelectItem
+                                        key={option.value}
+                                        value={option.value}
+                                      >
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="ownerid">Owner</Label>
+                                <Select name="ownerid" required>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select an owner" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {owners.map((owner) => (
+                                      <SelectItem
+                                        key={owner.id}
+                                        value={owner.id}
+                                      >
+                                        {owner.firstName} {owner.lastName}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            <Button type="submit">Add Pet</Button> 
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                       {isLoading ? (
                         <div className="flex justify-center items-center h-32">
                           <p className="text-lg text-gray-500">
