@@ -523,7 +523,7 @@ export function AdminDashboard() {
 
     try {
       await api.post<Pet>("/api/pets", dataObject);
-      // setPets([...pets, response.data]);
+      setPets([...pets, response.data]);
       fetchPets();
     } catch (err) {
       console.error("Error adding pet:", err);
